@@ -1,0 +1,71 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 350 80% 25%;
+    --card: 30 40% 97%;
+    --card-foreground: 350 80% 25%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 350 80% 25%;
+    --primary: 350 100% 25%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 40 60% 90%;
+    --secondary-foreground: 350 80% 25%;
+    --muted: 30 30% 94%;
+    --muted-foreground: 350 20% 45%;
+    --accent: 42 60% 55%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 350 40% 85%;
+    --input: 30 30% 94%;
+    --ring: 350 100% 25%;
+    --radius: 0.625rem;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+
+  body {
+    background-color: #FFFFFF;
+    color: #4A0404;
+    font-family: 'Inter', sans-serif;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Cormorant Garamond', serif;
+  }
+
+  ::selection {
+    background: #800020;
+    color: #FFFFFF;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: 'Cormorant Garamond', serif;
+  }
+  .font-body {
+    font-family: 'Inter', sans-serif;
+  }
+  .text-shadow-gold {
+    text-shadow: 0 2px 20px rgba(212, 175, 55, 0.3);
+  }
+  .text-shadow-soft {
+    text-shadow: 0 2px 30px rgba(74, 4, 4, 0.15);
+  }
+  .bg-pattern {
+    background-image: url('/images/geometric-pattern.jpg');
+    background-size: 300px;
+    background-repeat: repeat;
+    opacity: 0.04;
+  }
+}
