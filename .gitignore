@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Never commit a potentially poisoned npm lockfile
+package-lock.json
+node_modules/.package-lock.json
+
