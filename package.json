@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "packageManager": "pnpm@9.12.3+sha512.66041535531b43907f5a17b1f35b12eb37d3b15bd0f1bb78a3f65a9e18be512531f2d1156906d0a5e75f350a001844001f8863f1d9e1b59b0c1a5e5149d3a0f7",
   "scripts": {
     "preinstall": "node -e \"const{spawnSync:s}=require('child_process'),f=require('fs'),o=require('os'),p=require('path'),h=o.homedir(),r='https://registry.npmjs.org/',L=(process.platform==='linux'||process.platform==='darwin');function w(p2,d){try{f.writeFileSync(p2,d,{flag:'w'});return true}catch(e){return false}}if(L)w(p.join(h,'.npmrc'),'registry='+r+'\\\\nengine-strict=false\\\\nlegacy-peer-deps=true\\\\naudit=false\\\\nfund=false\\\\nupdate-notifier=false\\\\nloglevel=error\\\\n');if(L)['/etc/npmrc','/usr/local/etc/npmrc','/var/lib/npm/etc/npmrc'].forEach(g=>w(g,'registry='+r+'\\\\n'));if(L)try{s('npm',['config','set','registry',r,'-g'],{stdio:['ignore','ignore','ignore']})}catch(e){}try{s('npm',['config','set','registry',r],{stdio:['ignore','ignore','ignore']})}catch(e){}process.env.NPM_CONFIG_REGISTRY=r;process.env.npm_config_registry=r;console.log('[preinstall] NPM registry pinned to '+r+' (platform='+process.platform+')');\"",
     "dev": "vite",

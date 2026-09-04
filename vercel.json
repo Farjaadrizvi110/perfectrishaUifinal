@@ -3,7 +3,7 @@
   "framework": "vite",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "installCommand": "NPM_CONFIG_REGISTRY=https://registry.npmjs.org/ npm_config_registry=https://registry.npmjs.org/ rm -f package-lock.json node_modules/.package-lock.json && npm install --userconfig=$PWD/.npmrc --globalconfig=$PWD/.npmrc --registry=https://registry.npmjs.org/ --no-audit --no-fund --loglevel=error --legacy-peer-deps --no-package-lock-verify",
+  "installCommand": "rm -f package-lock.json node_modules/.package-lock.json ; PNPM_REGISTRY=https://registry.npmjs.org/ COREPACK_ENABLE_AUTO_PIN=0 PNPM_NO_BIN_TRUSTED=0 corepack enable 2>/dev/null ; if command -v pnpm >/dev/null 2>&1; then echo '[install] Using pnpm via corepack' ; pnpm config set registry https://registry.npmjs.org/ ; pnpm install --registry=https://registry.npmjs.org/ --no-frozen-lockfile --strict-peer-dependencies=false ; else echo '[install] pnpm not available, falling back to npm' ; NPM_CONFIG_REGISTRY=https://registry.npmjs.org/ npm_config_registry=https://registry.npmjs.org/ npm install --userconfig=$PWD/.npmrc --globalconfig=$PWD/.npmrc --registry=https://registry.npmjs.org/ --no-audit --no-fund --loglevel=error --legacy-peer-deps --no-package-lock-verify ; fi",
   "devCommand": "npm run dev",
   "cleanUrls": true,
   "trailingSlash": false,
