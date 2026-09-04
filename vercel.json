@@ -3,7 +3,7 @@
   "framework": "vite",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "installCommand": "npm install --registry=https://registry.npmjs.org/ --no-audit --no-fund --loglevel=error --legacy-peer-deps",
+  "installCommand": "NPM_CONFIG_REGISTRY=https://registry.npmjs.org/ npm_config_registry=https://registry.npmjs.org/ npm install --userconfig=$PWD/.npmrc --globalconfig=$PWD/.npmrc --registry=https://registry.npmjs.org/ --no-audit --no-fund --loglevel=error --legacy-peer-deps",
   "devCommand": "npm run dev",
   "cleanUrls": true,
   "trailingSlash": false,
