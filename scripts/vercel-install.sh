@@ -1,28 +1,40 @@
 #!/usr/bin/env bash
-set -euo pipefail
-LOG="[vercel-install]"
-PWD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$PWD_ROOT" || exit 2
-echo "[32m${LOG} CWD = ${PWD_ROOT}[0m"
-echo "[32m${LOG} Node: $(node -v) · npm: $(npm -v)[0m"
+# Vercel install runner — KISS version
+# Keep dead simple — no function tricks, no color escapes, tolerant of errors.
+set +e
+umask 022
+echo "[vi] ============ start ============"
+echo "[vi] args: $*"
+echo "[vi] BASH_VERSION: ${BASH_VERSION}"
+echo "[vi] 0 = $0"
 
-# NUCLEAR: delete every kind of poisoned lockfile before install
-echo "[32m${LOG} STEP 1/4 — clearing lockfiles (to avoid hardcoded mirror URLs in resolved:)[0m"
-rm -f package-lock.json pnpm-lock.yaml yarn.lock npm-shrinkwrap.json package.json.lock node_modules/.package-lock.json 2>/dev/null || true
-if [ -e package-lock.json ] || [ -e pnpm-lock.yaml ] || [ -e npm-shrinkwrap.json ]; then
-  echo "[33m${LOG} WARNING: lockfile still present after rm — forcedly shredding names [0m"
-  for f in package-lock.json pnpm-lock.yaml yarn.lock npm-shrinkwrap.json node_modules/.package-lock.json; do
-    [ -f "$f" ] && mv -- "$f" ".${f}.bak.$(date +%s)" 2>/dev/null || true
-  done
-fi
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+cd "${ROOT_DIR}" || { echo "[vi] FATAL cannot cd to ${ROOT_DIR}"; exit 2; }
+echo "[vi] ROOT_DIR = ${ROOT_DIR}"
+echo "[vi] cwd = $(pwd)"
+echo "[vi] node=$(node -v 2>/dev/null) npm=$(npm -v 2>/dev/null)"
+echo "[vi] ls package.json:"; ls -l package.json .npmrc vercel.json
 
-# Registry pin - every known channel simultaneously
+# 1) Clean lockfiles
+echo "[vi] (1/3) clearing any potentially poisoned lockfiles"
+rm -f package-lock.json 2>/dev/null
+rm -f pnpm-lock.yaml yarn.lock npm-shrinkwrap.json package.json.lock 2>/dev/null
+rm -f node_modules/.package-lock.json 2>/dev/null
+# If still present (permissions), rename them out of the way
+for f in package-lock.json pnpm-lock.yaml yarn.lock npm-shrinkwrap.json node_modules/.package-lock.json; do
+  if [ -e "$f" ]; then
+    mv -f -- "$f" ".quarantine_${f##*/}_$$" 2>/dev/null || true
+  fi
+done
+
+# 2) Every npm registry pin known
 REG="https://registry.npmjs.org/"
-echo "[32m${LOG} STEP 2/4 — pinning npm registry via every known channel -> ${REG}[0m"
+echo "[vi] (2/3) pinning NPM registry to ${REG} via ENV + ~/.npmrc + npm config set"
 export NPM_CONFIG_REGISTRY="$REG"
 export npm_config_registry="$REG"
-export NPM_CONFIG_USERCONFIG="$PWD_ROOT/.npmrc"
-export NPM_CONFIG_GLOBALCONFIG="$PWD_ROOT/.npmrc"
+export NPM_CONFIG_USERCONFIG="${ROOT_DIR}/.npmrc"
+export NPM_CONFIG_GLOBALCONFIG="${ROOT_DIR}/.npmrc"
 export npm_config_fetch_retries=10
 export npm_config_fetch_retry_mintimeout=30000
 export npm_config_fetch_retry_maxtimeout=300000
@@ -34,10 +46,8 @@ export npm_config_legacy_peer_deps=true
 export npm_config_engine_strict=false
 export npm_config_strict_ssl=true
 export npm_config_loglevel=error
-
-# Also write the ~/.npmrc on this Vercel worker (Linux)
+# Write the user's HOME/.npmrc on this Vercel worker
 HOMERC="$HOME/.npmrc"
-echo "[32m${LOG} STEP 3/4 — writing ${HOMERC} on worker + attempting npm config set CLI[0m"
 {
   echo "registry=${REG}"
   echo "engine-strict=false"
@@ -46,19 +56,20 @@ echo "[32m${LOG} STEP 3/4 — writing ${HOMERC} on worker + attempting npm conf
   echo "fund=false"
   echo "update-notifier=false"
   echo "loglevel=error"
-} > "$HOMERC" 2>/dev/null || echo "  (could not write ${HOMERC})"
+} > "${HOMERC}" 2>/dev/null && echo "[vi] wrote ${HOMERC}" || echo "[vi] could not write ${HOMERC} (non-fatal; project .npmrc still active)"
+# Try system npmrcs (silently ignore failures)
 for rc in /etc/npmrc /usr/local/etc/npmrc /var/lib/npm/etc/npmrc; do
-  echo "registry=${REG}" > "$rc" 2>/dev/null || true
+  echo "registry=${REG}" > "${rc}" 2>/dev/null && echo "[vi] wrote ${rc}" || true
 done
-npm config set registry "$REG" 2>/dev/null || true
-npm config set registry "$REG" -g 2>/dev/null || true
+npm config set registry "${REG}" 2>/dev/null || true
+npm config set registry "${REG}" -g 2>/dev/null || true
 
-# Actually install
-echo "[32m${LOG} STEP 4/4 — npm install with --registry + --userconfig (no package-lock verify)[0m"
+# 3) Install
+echo "[vi] (3/3) npm install"
 npm install \
-  --registry="$REG" \
-  --userconfig="$PWD_ROOT/.npmrc" \
-  --globalconfig="$PWD_ROOT/.npmrc" \
+  "--registry=${REG}" \
+  "--userconfig=${ROOT_DIR}/.npmrc" \
+  "--globalconfig=${ROOT_DIR}/.npmrc" \
   --fetch-retries=10 \
   --fetch-retry-mintimeout=30000 \
   --fetch-retry-maxtimeout=300000 \
@@ -71,5 +82,19 @@ npm install \
   --loglevel=error \
   --no-package-lock-verify \
   --strict-ssl=true
+RC=$?
+if [ "${RC}" -ne 0 ]; then
+  echo "[vi] first install failed (RC=${RC}); retry once with minimal flags"
+  rm -f package-lock.json 2>/dev/null || true
+  npm install "--registry=${REG}" --no-audit --no-fund --no-update-notifier --legacy-peer-deps --engine-strict=false --loglevel=error --strict-ssl=true
+  RC=$?
+fi
 
-echo "[32m${LOG} INSTALL SUCCESS ✅ — $(ls node_modules | wc -l) folders in node_modules[0m"
+if [ "${RC}" -eq 0 ]; then
+  echo "[vi] INSTALL OK — node_modules count: $(ls node_modules 2>/dev/null | wc -l)"
+  echo "[vi] ============ OK ============"
+  exit 0
+else
+  echo "[vi] INSTALL FAILED RC=${RC}"
+  exit "${RC}"
+fi
