@@ -3,7 +3,7 @@
   "framework": "vite",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "installCommand": "bash ./scripts/vercel-install.sh",
+  "installCommand": "NPM_CONFIG_REGISTRY=https://registry.npmjs.org/ npm install --no-package-lock --registry=https://registry.npmjs.org/ --legacy-peer-deps --no-audit --no-fund --fetch-timeout=300000",
   "devCommand": "npm run dev",
   "cleanUrls": true,
   "trailingSlash": false,
