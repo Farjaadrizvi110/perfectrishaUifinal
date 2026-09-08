@@ -58,19 +58,33 @@ export default function LoveStory() {
         <div ref={cardsRef} className="space-y-6">
           <div className="rounded-2xl border border-maroon/8 bg-white/80 backdrop-blur-sm p-8 shadow-sm opacity-0">
             <p className="font-body text-base text-deep-maroon/75 leading-relaxed text-center">
-              We appreciate how difficult it is for people with special needs to find a source of contact with appropriate rishta profiles — therefore we have a unique tab for a collection of profiles for people with special needs.
+              Every love story begins with a spark&mdash;the very first hello, a shared glance, or an unexpected twist of fate that alters two lives forever.
             </p>
           </div>
 
           <div className="rounded-2xl border border-maroon/8 bg-white/80 backdrop-blur-sm p-8 shadow-sm opacity-0">
             <p className="font-body text-base text-deep-maroon/75 leading-relaxed text-center">
-              At PerfectRishta it&rsquo;s all about making things easier and better for you. We totally understand how challenging it can be to go through hundreds of profiles daily.
+              The magic lies in those opening chapters: the date you meet, your first conversation, the excitement and the little details that made you realize everything was about to change.
             </p>
           </div>
 
           <div className="rounded-2xl border border-maroon/8 bg-white/80 backdrop-blur-sm p-8 shadow-sm opacity-0">
             <p className="font-body text-base text-deep-maroon/75 leading-relaxed text-center">
-              Our website has been designed for ease of use. You can filter your search according to your need, using the selection tabs in the search tab. We hope to make things as easy for every applicant or their parent to find the right rishta.
+              For a classic, nostalgic feel of these moments, Perfect Rishta will facilitate in the meeting of two people who are waiting to create their &lsquo;together forever&rsquo; love story.
+            </p>
+          </div>
+
+          <div
+            className="rounded-2xl backdrop-blur-sm p-8 shadow-sm opacity-0"
+            style={{
+              background: 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.04))',
+              border: '1px solid rgba(212,175,55,0.35)',
+            }}
+          >
+            <p className="font-body text-base text-deep-maroon leading-relaxed text-center">
+              <span className="font-semibold" style={{ color: '#6B4A00' }}>
+                We also cater for people with special needs.
+              </span>
             </p>
           </div>
         </div>
