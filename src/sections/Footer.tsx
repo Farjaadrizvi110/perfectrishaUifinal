@@ -68,14 +68,31 @@ export default function Footer() {
         </button>
 
         {/* Contact details */}
-        <div className="animate-footer mt-14 flex flex-col sm:flex-row items-center gap-6 sm:gap-10 opacity-0">
+        <div className="animate-footer mt-14 flex flex-wrap items-center justify-center gap-x-8 gap-y-4 sm:gap-10 opacity-0">
           <a href={`mailto:${footerContent.email}`} className="flex items-center gap-2 font-body text-sm text-white/60 hover:text-gold transition-colors duration-300">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
             </svg>
             {footerContent.email}
           </a>
-          <a href={`tel:${footerContent.phone.replace(/\s/g, '')}`} className="flex items-center gap-2 font-body text-sm text-white/60 hover:text-gold transition-colors duration-300">
+
+          <a
+            href={`https://wa.me/${(footerContent.whatsapp ?? footerContent.phone).replace(/[^\d]/g, '')}?text=${encodeURIComponent('Assalamualaikum, I would like to know more about PerfectRishta services.')}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 font-body text-sm text-white/60 hover:text-gold transition-colors duration-300"
+            title={`Chat on WhatsApp — ${footerContent.whatsapp ?? footerContent.phone}`}
+          >
+            <svg width="16" height="16" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="0" strokeLinecap="round" strokeLinejoin="round">
+              <path
+                d="M19.11 17.205c-.372 0-1.088 1.39-1.518 1.39a.63.63 0 0 1-.315-.1c-.802-.402-1.504-.817-2.163-1.447-.545-.516-1.146-1.29-1.46-1.963a.426.426 0 0 1-.073-.215c0-.33.99-.945.99-1.49 0-.143-.73-2.09-.832-2.335-.143-.372-.214-.487-.6-.487-.187 0-.36-.043-.53-.043-.302 0-.53.115-.746.315-.688.645-1.032 1.318-1.064 2.263l.03.172c.036 1.28.628 2.87 1.96 4.267 1.33 1.395 2.877 2.162 4.378 2.54l.285.072c.87.225 1.66.18 2.263.11.645-.074 2.077-.854 2.37-1.686.296-.833.314-1.54.222-1.686-.092-.144-.33-.223-.702-.37zM27.494 8.564C24.91 4.99 20.41 3.128 15.824 3.14c-5.75.013-10.446 3.895-12.095 9.073-1.686 5.536.102 11.38 4.03 15.306L5.888 31.82l4.375-1.13a12.11 12.11 0 0 0 5.56 1.36h.004c.31 0 .614-.012.914-.032 4.73-.16 9.068-2.44 11.658-6.12 2.848-4.058 3.323-9.108 1.268-13.593a10.8 10.8 0 0 0-.23-.476zM15.855 29.056c-.242.015-.476.03-.73.03a10.3 10.3 0 0 1-4.95-1.176l-.355-.21-3.264.84.86-3.16-.23-.366a10.1 10.1 0 0 1-1.88-6.444c-.012-3.975 2.687-7.675 6.725-8.844 3.832-1.11 8.14.1 11.01 3.17 2.73 2.925 3.64 7.018 2.37 10.806-1.22 3.63-4.57 6.27-8.446 6.34z"
+                fill="currentColor"
+              />
+            </svg>
+            WhatsApp · {footerContent.whatsapp ?? footerContent.phone}
+          </a>
+
+          <a href={`tel:${(footerContent.phone ?? '').replace(/\s/g, '')}`} className="flex items-center gap-2 font-body text-sm text-white/60 hover:text-gold transition-colors duration-300">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
             </svg>

@@ -5,6 +5,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Navigation from '@/components/Navigation';
 import Preloader from '@/components/Preloader';
 import PromoPopup from '@/components/PromoPopup';
+import WhatsAppFAB from '@/components/WhatsAppFAB';
 import HomePage from '@/pages/HomePage';
 import AboutPage from '@/pages/AboutPage';
 import JoinPage from '@/pages/JoinPage';
@@ -56,6 +57,9 @@ function App() {
           <Route path="/admin" element={<AdminPage />} />
         </Routes>
       </div>
+
+      {/* Global floating WhatsApp FAB */}
+      {showContent && <WhatsAppFAB />}
     </>
   );
 }
