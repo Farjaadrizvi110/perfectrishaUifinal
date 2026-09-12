@@ -66,18 +66,27 @@ export default function WelcomeInfo() {
             <span className="animate-item inline-block font-body text-xs font-semibold tracking-[0.25em] uppercase text-maroon mb-4 opacity-0">
               Welcome to PerfectRishta
             </span>
-            <h2 className="animate-item font-display font-normal text-deep-maroon opacity-0" style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.8rem)', letterSpacing: '-0.01em', lineHeight: 1.15 }}>
+            <h2 className="animate-item font-display font-normal text-deep-maroon max-w-[18ch] md:max-w-none opacity-0" style={{ fontSize: 'clamp(1.8rem, 3.75vw, 2.9rem)', letterSpacing: '-0.01em', lineHeight: 1.15, textWrap: 'balance', wordBreak: 'break-word' }}>
               UK&apos;s Trusted Islamic Marriage Bureau
             </h2>
-            <div className="animate-item w-12 h-px bg-gradient-to-r from-gold/60 to-transparent my-5 opacity-0" />
-            <p className="animate-item font-body text-base text-deep-maroon/65 leading-relaxed mb-4 opacity-0">
-              PerfectRishta is a premium, confidential, and Islamically-guided matrimonial service dedicated to helping British Muslims find their perfect life partner. We believe that marriage is a sacred trust — a step towards completing half of your faith.
+            <div className="animate-item w-12 h-px bg-gradient-to-r from-gold/60 to-transparent my-6 opacity-0" />
+            <p className="animate-item font-body text-base md:text-lg text-deep-maroon/70 leading-[1.85] max-w-[62ch] mt-0 md:mt-0 opacity-0" style={{ textWrap: 'pretty' }}>
+              PerfectRishta is a premium, confidential, and Islamically-guided matrimonial service dedicated to helping British Muslims find their perfect life partner.
             </p>
-            <p className="animate-item font-body text-base text-deep-maroon/65 leading-relaxed mb-4 opacity-0">
-              Our approach is rooted in the Sunnah. We do not believe in casual introductions or superficial matching. Every profile that enters our system is personally reviewed, verified, and handled with the utmost care and respect for Islamic values.
+            <p className="animate-item font-body text-base md:text-lg text-deep-maroon/70 leading-[1.85] max-w-[62ch] mt-4 md:mt-5 opacity-0" style={{ textWrap: 'pretty' }}>
+              We believe that marriage is a sacred trust — a step towards completing half of your faith.
             </p>
-            <p className="animate-item font-body text-base text-deep-maroon/65 leading-relaxed opacity-0">
-              Whether you are a young professional in London, a university graduate in Birmingham, or a family seeking a suitable match for your son or daughter — we are here to serve you with the same care we would give our own families.
+            <p className="animate-item font-body text-base md:text-lg text-deep-maroon/70 leading-[1.85] max-w-[62ch] mt-4 md:mt-5 opacity-0" style={{ textWrap: 'pretty' }}>
+              Our approach is rooted in the Sunnah. We do not believe in casual introductions or superficial matching.
+            </p>
+            <p className="animate-item font-body text-base md:text-lg text-deep-maroon/70 leading-[1.85] max-w-[62ch] mt-4 md:mt-5 opacity-0" style={{ textWrap: 'pretty' }}>
+              Every profile that enters our system is personally reviewed, verified, and handled with the utmost care and respect for Islamic values.
+            </p>
+            <p className="animate-item font-body text-base md:text-lg text-deep-maroon/70 leading-[1.85] max-w-[62ch] mt-4 md:mt-5 opacity-0" style={{ textWrap: 'pretty' }}>
+              Whether you are a young professional in London, a university graduate in Birmingham, or a family seeking a suitable match for your son or daughter — we are here to serve you.
+            </p>
+            <p className="animate-item font-body text-base md:text-lg text-deep-maroon/70 leading-[1.85] max-w-[62ch] mt-4 md:mt-5 opacity-0" style={{ textWrap: 'pretty' }}>
+              With the same care we would give our own families.
             </p>
           </div>
         </div>

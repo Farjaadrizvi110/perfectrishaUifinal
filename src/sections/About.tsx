@@ -72,7 +72,7 @@ export default function About() {
       const text = headingRef.current.textContent || '';
       const words = text.split(' ');
       headingRef.current.innerHTML = words.map(w =>
-        `<span class="inline-block overflow-hidden mr-[0.25em]"><span class="word-inner inline-block">${w}</span></span>`
+        `<span class="word-wrap inline-block align-top pr-[0.3em] pb-1 overflow-hidden"><span class="word-inner inline-block">${w}</span></span>`
       ).join('');
       const inners = headingRef.current.querySelectorAll('.word-inner');
       gsap.fromTo(inners, { opacity: 0, y: 50, rotateX: -30 },
@@ -163,17 +163,18 @@ export default function About() {
           <div>
             <h2
               ref={headingRef}
-              className="font-display font-normal text-deep-maroon leading-tight"
-              style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', letterSpacing: '-0.01em', perspective: '800px' }}
+              className="font-display font-normal text-deep-maroon leading-[1.15] max-w-[20ch] md:max-w-none"
+              style={{ fontSize: 'clamp(2rem, 4.5vw, 3.25rem)', letterSpacing: '-0.01em', perspective: '800px', textWrap: 'balance', wordBreak: 'break-word' }}
             >
               {aboutContent.heading}
             </h2>
 
-            <div ref={parasRef}>
+            <div ref={parasRef} className="mt-7 md:mt-9">
               {aboutContent.paragraphs.map((para, i) => (
                 <p
                   key={i}
-                  className={`font-body text-base text-deep-maroon/65 leading-relaxed opacity-0 ${i === 0 ? 'mt-6' : 'mt-4'}`}
+                  className={`font-body text-base md:text-lg text-deep-maroon/70 leading-[1.85] max-w-[62ch] ${i === 0 ? 'mt-0' : 'mt-4 md:mt-5'}`}
+                  style={{ textWrap: 'pretty' }}
                 >
                   {para}
                 </p>
