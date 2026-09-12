@@ -140,7 +140,7 @@ export default function About() {
           <div ref={leftRef} className="relative opacity-0 lg:sticky lg:top-32">
             <div className="relative rounded-2xl overflow-hidden shadow-2xl">
               <img
-                src="/images/about-couple.jpg"
+                src="/images/about-couple-top.jpg"
                 alt="Muslim couple at their wedding ceremony in the UK"
                 className="w-full h-auto object-cover"
                 style={{ aspectRatio: '3/4' }}
