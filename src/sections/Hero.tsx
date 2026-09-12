@@ -45,8 +45,8 @@ export default function Hero({ onNavigate }: HeroProps) {
       <div className="absolute inset-0 z-0">
         {/* Silk base image */}
         <img
-          src="/images/hero-bg.jpg"
-          alt=""
+          src="/images/hero-upper.jpg"
+          alt="Wedding couple hero background"
           className="w-full h-full object-cover"
         />
         {/* Bokeh overlay for dreamy effect */}
