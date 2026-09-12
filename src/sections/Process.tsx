@@ -6,9 +6,9 @@ import { processContent } from '@/content/seoContent';
 gsap.registerPlugin(ScrollTrigger);
 
 const STEPS = [
-  { number: '01', title: processContent.steps[0].title, description: processContent.steps[0].description, image: '/images/mehndi-hands.jpg' },
-  { number: '02', title: processContent.steps[1].title, description: processContent.steps[1].description, image: '/images/family-meeting.jpg' },
-  { number: '03', title: processContent.steps[2].title, description: processContent.steps[2].description, image: '/images/wedding-bg.jpg' },
+  { number: '01', title: processContent.steps[0].title, description: processContent.steps[0].description, image: '/images/process-flower-hand.jpg' },
+  { number: '02', title: processContent.steps[1].title, description: processContent.steps[1].description, image: '/images/process-family-engagement.jpg' },
+  { number: '03', title: processContent.steps[2].title, description: processContent.steps[2].description, image: '/images/process-wedding-shadi.jpg' },
 ];
 
 export default function Process() {

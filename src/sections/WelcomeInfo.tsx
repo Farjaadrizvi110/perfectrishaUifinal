@@ -45,7 +45,7 @@ export default function WelcomeInfo() {
           <div ref={imageRef} className="relative opacity-0">
             <div className="relative rounded-2xl overflow-hidden shadow-xl">
               <img
-                src="/images/hero-bg.jpg"
+                src="/images/hero-upper.jpg"
                 alt="Muslim wedding celebration with red silk and rose petals"
                 className="w-full h-[400px] lg:h-[500px] object-cover"
               />
