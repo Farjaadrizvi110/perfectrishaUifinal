@@ -46,12 +46,12 @@ export default function HeroHome() {
     <section id="hero" ref={sectionRef} className="relative w-full overflow-hidden" style={{ minHeight: '100vh' }}>
       {/* Background layers */}
       <div className="absolute inset-0 z-0">
-        <img src="/images/hero-couple-hands.jpg" alt="Muslim groom and bride holding hands on wedding day in traditional maroon and gold attire with henna" className="w-full h-full object-cover" loading="eager" fetchPriority="high" />
+        <img src="/images/hero-henna.jpg" alt="Bride and groom hands with henna" className="w-full h-full object-cover" />
         <div
           className="absolute inset-0"
           style={{ background: 'linear-gradient(135deg, rgba(128, 0, 32, 0.72) 0%, rgba(74, 4, 4, 0.55) 40%, rgba(128, 0, 32, 0.35) 100%)' }}
         />
-        <img src="/images/hero-bouquet-lap.jpg" alt="Red rose bridal bouquet resting on bride's maroon and gold lehenga lap on wedding day" className="absolute inset-0 w-full h-full object-cover opacity-25 mix-blend-overlay" loading="eager" fetchPriority="auto" />
+        <img src="/images/bg-bokeh.jpg" alt="" className="absolute inset-0 w-full h-full object-cover opacity-25 mix-blend-overlay" />
       </div>
 
       {/* Content */}
