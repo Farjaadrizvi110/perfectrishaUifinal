@@ -169,12 +169,11 @@ export default function About() {
               {aboutContent.heading}
             </h2>
 
-            <div ref={parasRef} className="mt-7 md:mt-9">
+            <div ref={parasRef}>
               {aboutContent.paragraphs.map((para, i) => (
                 <p
                   key={i}
-                  className={`font-body text-base md:text-lg text-deep-maroon/70 leading-[1.85] max-w-[62ch] ${i === 0 ? 'mt-0' : 'mt-4 md:mt-5'}`}
-                  style={{ textWrap: 'pretty' }}
+                  className={`font-body text-base text-deep-maroon/65 leading-relaxed opacity-0 ${i === 0 ? 'mt-6' : 'mt-4'}`}
                 >
                   {para}
                 </p>
