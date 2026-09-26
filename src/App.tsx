@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -13,6 +13,7 @@ import ProfilesPage from '@/pages/ProfilesPage';
 import ProposalsPage from '@/pages/ProposalsPage';
 import LoginPage from '@/pages/LoginPage';
 import AdminPage from '@/pages/AdminPage';
+import DashboardPage from '@/pages/DashboardPage';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -20,8 +21,31 @@ function App() {
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(true);
   const [showContent, setShowContent] = useState(false);
+  const userInteractingRef = useRef(false);
 
   useEffect(() => {
+    const onFocus = (e: FocusEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+        userInteractingRef.current = true;
+      }
+    };
+    const onBlur = (e: FocusEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+        userInteractingRef.current = false;
+      }
+    };
+    document.addEventListener('focusin', onFocus);
+    document.addEventListener('focusout', onBlur);
+    return () => {
+      document.removeEventListener('focusin', onFocus);
+      document.removeEventListener('focusout', onBlur);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (userInteractingRef.current) return;
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
@@ -55,6 +79,7 @@ function App() {
           <Route path="/proposals" element={<ProposalsPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/admin" element={<AdminPage />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
         </Routes>
       </div>
 

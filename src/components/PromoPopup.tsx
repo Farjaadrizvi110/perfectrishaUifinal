@@ -15,7 +15,27 @@ export default function PromoPopup() {
     const dismissed = sessionStorage.getItem('perfectrishta_popup_dismissed');
     if (dismissed) return;
 
+    const userInteracting =
+      document.activeElement &&
+      (document.activeElement.tagName === 'INPUT' ||
+        document.activeElement.tagName === 'TEXTAREA' ||
+        document.activeElement.tagName === 'SELECT');
+    if (userInteracting) {
+      hasShown.current = true;
+      sessionStorage.setItem('perfectrishta_popup_dismissed', 'true');
+      return;
+    }
+
     const timer = setTimeout(() => {
+      const stillNotTyping = !(
+        document.activeElement &&
+        ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)
+      );
+      if (!stillNotTyping) {
+        sessionStorage.setItem('perfectrishta_popup_dismissed', 'true');
+        hasShown.current = true;
+        return;
+      }
       hasShown.current = true;
       setVisible(true);
     }, 3000);

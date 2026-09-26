@@ -1,11 +1,18 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { api } from '@/lib/api';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger);
 
 interface ProfileForm {
+  // Identity
+  firstName: string;
+  lastName: string;
+  // Contact
+  email: string;
+  phone: string;
   // Personal
   gender: string;
   dob: string;
@@ -55,6 +62,8 @@ interface ProfileForm {
 }
 
 const initialForm: ProfileForm = {
+  firstName: '', lastName: '',
+  email: '', phone: '',
   gender: '', dob: '', age: '', height: '', languages: '', location: '', nationality: '', ethnicity: '', disability: '',
   religion: '', sect: '', hijabi: '', beardStyle: '', religiousExpectations: '',
   education: '', occupation: '', annualIncome: '',
@@ -72,6 +81,7 @@ export default function JoinPage() {
   const [form, setForm] = useState<ProfileForm>(initialForm);
   const [submitted, setSubmitted] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -94,81 +104,96 @@ export default function JoinPage() {
     return () => { ScrollTrigger.getAll().forEach(t => t.kill()); };
   }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
-    setForm({ ...form, [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value });
-  };
+    setForm((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
+    }));
+  }, []);
 
-  const SectionTitle = ({ title }: { title: string }) => (
-    <h3 className="font-display text-lg text-maroon font-normal mb-5 pb-3 border-b border-maroon/10 flex items-center gap-3">
-      <span className="w-8 h-8 rounded-full bg-gradient-to-br from-maroon to-deep-maroon flex items-center justify-center">
-        <span className="w-2 h-2 rounded-full bg-gold" />
-      </span>
-      {title}
-    </h3>
-  );
+  const SectionTitle = useMemo(() => {
+    return ({ title }: { title: string }) => (
+      <h3 className="font-display text-lg text-maroon font-normal mb-5 pb-3 border-b border-maroon/10 flex items-center gap-3">
+        <span className="w-8 h-8 rounded-full bg-gradient-to-br from-maroon to-deep-maroon flex items-center justify-center">
+          <span className="w-2 h-2 rounded-full bg-gold" />
+        </span>
+        {title}
+      </h3>
+    );
+  }, []);
 
-  const FieldRow = ({ children }: { children: React.ReactNode }) => (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">{children}</div>
-  );
+  const FieldRow = useMemo(() => {
+    return ({ children }: { children: React.ReactNode }) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">{children}</div>
+    );
+  }, []);
 
-  const Label = ({ children, required }: { children: React.ReactNode; required?: boolean }) => (
-    <label className="block font-body text-sm font-medium text-deep-maroon/70 mb-2">
-      {children}{required && <span className="text-maroon ml-0.5">*</span>}
-    </label>
-  );
+  const Label = useMemo(() => {
+    return ({ children, required }: { children: React.ReactNode; required?: boolean }) => (
+      <label className="block font-body text-sm font-medium text-deep-maroon/70 mb-2">
+        {children}{required && <span className="text-maroon ml-0.5">*</span>}
+      </label>
+    );
+  }, []);
 
-  const Input = ({ name, value, onChange, placeholder, required, type = 'text' }: any) => (
-    <input
-      type={type}
-      name={name}
-      value={value}
-      onChange={onChange}
-      required={required}
-      placeholder={placeholder}
-      className="w-full px-4 py-3 rounded-xl border border-maroon/10 bg-cream/30 font-body text-sm text-deep-maroon placeholder:text-deep-maroon/30 focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/30 transition-all"
-    />
-  );
+  const Input = useMemo(() => {
+    return ({ name, value, onChange, placeholder, required, type = 'text' }: any) => (
+      <input
+        type={type}
+        name={name}
+        value={value}
+        onChange={onChange}
+        required={required}
+        placeholder={placeholder}
+        autoComplete="off"
+        spellCheck={false}
+        className="w-full px-4 py-3 rounded-xl border border-maroon/10 bg-cream/30 font-body text-sm text-deep-maroon placeholder:text-deep-maroon/30 focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/30 transition-all"
+      />
+    );
+  }, []);
 
-  const Select = ({ name, value, onChange, options, required }: any) => (
-    <select
-      name={name}
-      value={value}
-      onChange={onChange}
-      required={required}
-      className="w-full px-4 py-3 rounded-xl border border-maroon/10 bg-cream/30 font-body text-sm text-deep-maroon focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/30 transition-all appearance-none cursor-pointer"
-    >
-      {options.map((opt: any) => (
-        <option key={opt.value} value={opt.value}>{opt.label}</option>
-      ))}
-    </select>
-  );
+  const Select = useMemo(() => {
+    return ({ name, value, onChange, options, required }: any) => (
+      <select
+        name={name}
+        value={value}
+        onChange={onChange}
+        required={required}
+        autoComplete="off"
+        className="w-full px-4 py-3 rounded-xl border border-maroon/10 bg-cream/30 font-body text-sm text-deep-maroon focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/30 transition-all appearance-none cursor-pointer"
+      >
+        {options.map((opt: any) => (
+          <option key={opt.value} value={opt.value}>{opt.label}</option>
+        ))}
+      </select>
+    );
+  }, []);
 
-  const TextArea = ({ name, value, onChange, placeholder, rows = 3 }: any) => (
-    <textarea
-      name={name}
-      value={value}
-      onChange={onChange}
-      rows={rows}
-      placeholder={placeholder}
-      className="w-full px-4 py-3 rounded-xl border border-maroon/10 bg-cream/30 font-body text-sm text-deep-maroon placeholder:text-deep-maroon/30 focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/30 transition-all resize-none"
-    />
-  );
+  const TextArea = useMemo(() => {
+    return ({ name, value, onChange, placeholder, rows = 3 }: any) => (
+      <textarea
+        name={name}
+        value={value}
+        onChange={onChange}
+        rows={rows}
+        placeholder={placeholder}
+        autoComplete="off"
+        spellCheck={false}
+        className="w-full px-4 py-3 rounded-xl border border-maroon/10 bg-cream/30 font-body text-sm text-deep-maroon placeholder:text-deep-maroon/30 focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/30 transition-all resize-none"
+      />
+    );
+  }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    const existing = JSON.parse(localStorage.getItem('perfectrishta_profiles') || '[]');
-    const newProfile = {
-      ...form,
-      id: Date.now().toString(),
-      plan: selectedPlan || 'Free',
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-    };
-    existing.push(newProfile);
-    localStorage.setItem('perfectrishta_profiles', JSON.stringify(existing));
-    setSubmitted(true);
-  };
+    try {
+      await api.auth.register({ ...form, plan: selectedPlan || 'Free' });
+      setSubmitted(true);
+    } catch (err: any) {
+      setError(err.message || 'Registration failed');
+    }
+  }, [form, selectedPlan]);
 
   return (
     <section
@@ -262,6 +287,26 @@ export default function JoinPage() {
             <div>
               <SectionTitle title="Personal Information" />
               <div className="space-y-5">
+                <FieldRow>
+                  <div>
+                    <Label required>First Name</Label>
+                    <Input name="firstName" value={form.firstName} onChange={handleChange} placeholder="e.g. Aisha, Hamza" required />
+                  </div>
+                  <div>
+                    <Label required>Last Name</Label>
+                    <Input name="lastName" value={form.lastName} onChange={handleChange} placeholder="e.g. Khan, Ahmed" required />
+                  </div>
+                </FieldRow>
+                <FieldRow>
+                  <div>
+                    <Label required>Email Address</Label>
+                    <Input type="email" name="email" value={form.email} onChange={handleChange} placeholder="you@example.com" required />
+                  </div>
+                  <div>
+                    <Label required>Contact Number (WhatsApp)</Label>
+                    <Input type="tel" name="phone" value={form.phone} onChange={handleChange} placeholder="e.g. +44 7XXX XXX XXX" required />
+                  </div>
+                </FieldRow>
                 <FieldRow>
                   <div>
                     <Label required>Gender</Label>
@@ -562,6 +607,13 @@ export default function JoinPage() {
                 </span>
               </label>
             </div>
+
+            {/* Error */}
+            {error && (
+              <div className="p-3 rounded-xl bg-red-50 border border-red-200">
+                <p className="font-body text-xs text-red-600">{error}</p>
+              </div>
+            )}
 
             {/* Submit */}
             <div className="pt-4">

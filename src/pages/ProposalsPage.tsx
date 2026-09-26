@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { api } from '@/lib/api';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { footerContent } from '@/content/seoContent';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -23,13 +25,24 @@ export default function ProposalsPage() {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    const member = localStorage.getItem('perfectrishta_current_member');
-    if (member) {
-      setIsPaidMember(true);
-      setMemberInfo(JSON.parse(member));
-    }
-    const stored = JSON.parse(localStorage.getItem('perfectrishta_profiles') || '[]');
-    setProfiles(stored.reverse());
+    (async () => {
+      const token = api.getToken();
+      if (!token) {
+        setIsPaidMember(false);
+        return;
+      }
+      try {
+        const meData = await api.auth.me();
+        if (meData.user.membershipStatus === 'active') {
+          setIsPaidMember(true);
+          setMemberInfo({ plan: meData.user.membershipTier, profileId: '', joinedAt: '' });
+          const profilesData = await api.profiles.list();
+          setProfiles(profilesData.profiles);
+        }
+      } catch {
+        setIsPaidMember(false);
+      }
+    })();
 
     if (headerRef.current) {
       const items = headerRef.current.querySelectorAll('.animate-item');
@@ -114,11 +127,16 @@ export default function ProposalsPage() {
         ) : (
           <div ref={gridRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredProfiles.map((profile) => (
-              <div key={profile.id} onClick={() => setSelectedProfile(profile)} className="group rounded-2xl border border-maroon/8 bg-white p-6 cursor-pointer transition-all duration-400 hover:-translate-y-1 hover:shadow-lg hover:border-gold/20 opacity-0">
+              <div key={profile._id} onClick={() => setSelectedProfile(profile)} className="group rounded-2xl border border-maroon/8 bg-white p-6 cursor-pointer transition-all duration-400 hover:-translate-y-1 hover:shadow-lg hover:border-gold/20">
                 <div className="flex items-center gap-4 mb-5">
                   <div className="w-14 h-14 rounded-full flex items-center justify-center font-display text-lg text-white flex-shrink-0" style={{ background: 'linear-gradient(135deg, #800020, #4A0404)' }}>{getInitials(profile)}</div>
                   <div>
-                    <h3 className="font-display text-lg text-deep-maroon font-normal group-hover:text-maroon transition-colors">{profile.gender === 'Male' ? 'Brother' : 'Sister'} Profile</h3>
+                    <h3 className="font-display text-lg text-deep-maroon font-normal group-hover:text-maroon transition-colors">
+                      {(() => {
+                        const bits = [profile.firstName, profile.lastName].filter(Boolean);
+                        return bits.length ? bits.join(' ') : (profile.gender === 'Male' ? 'Male' : 'Female') + ' Profile';
+                      })()}
+                    </h3>
                     <p className="font-body text-xs text-deep-maroon/50">{profile.age} years • {profile.location}</p>
                   </div>
                 </div>
@@ -151,7 +169,12 @@ export default function ProposalsPage() {
             <div className="flex items-center gap-4 mb-6">
               <div className="w-16 h-16 rounded-full flex items-center justify-center font-display text-xl text-white flex-shrink-0" style={{ background: 'linear-gradient(135deg, #800020, #4A0404)' }}>{getInitials(selectedProfile)}</div>
               <div>
-                <h2 className="font-display text-2xl text-deep-maroon">{selectedProfile.gender === 'Male' ? 'Brother' : 'Sister'} Proposal</h2>
+                <h2 className="font-display text-2xl text-deep-maroon">
+                  {(() => {
+                    const bits = [selectedProfile.firstName, selectedProfile.lastName].filter(Boolean);
+                    return bits.length ? bits.join(' ') : (selectedProfile.gender === 'Male' ? 'Male' : 'Female') + ' Proposal';
+                  })()}
+                </h2>
                 <p className="font-body text-sm text-deep-maroon/50">{selectedProfile.age} years • {selectedProfile.gender} • {selectedProfile.location}</p>
               </div>
             </div>
@@ -240,19 +263,52 @@ export default function ProposalsPage() {
 
               {selectedProfile.otherInfo && <Detail label="Other Information" value={selectedProfile.otherInfo} full />}
 
+              {/* Contact — Task 3: blurred + locked, click → WhatsApp manager request */}
+              {(selectedProfile.email || selectedProfile.phone) && (
+                <div className="rounded-2xl border border-gold/20 bg-gradient-to-r from-gold/5 to-gold/10 p-5">
+                  <h4 className="font-display text-sm text-maroon font-normal mb-4 pb-2 border-b border-maroon/5 flex items-center gap-2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    Contact Information (Locked)
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                    {selectedProfile.email && (
+                      <div className="p-3 rounded-xl border border-maroon/10 bg-white">
+                        <p className="font-body text-[10px] font-semibold tracking-[0.12em] uppercase text-maroon/60 mb-1">Email</p>
+                        <p className="font-body text-sm text-deep-maroon/80 select-none" style={{ filter: 'blur(6px)', letterSpacing: '0.15em' }}>••••••••••@•••••.com</p>
+                      </div>
+                    )}
+                    {selectedProfile.phone && (
+                      <div className="p-3 rounded-xl border border-maroon/10 bg-white">
+                        <p className="font-body text-[10px] font-semibold tracking-[0.12em] uppercase text-maroon/60 mb-1">Phone / WhatsApp</p>
+                        <p className="font-body text-sm text-deep-maroon/80 select-none" style={{ filter: 'blur(6px)', letterSpacing: '0.15em' }}>+•• •••• ••••••</p>
+                      </div>
+                    )}
+                  </div>
+                  <p className="font-body text-[11px] text-deep-maroon/55 mb-4 leading-relaxed">
+                    Contact details are kept private for your safety. Click below to request this profile's details via our WhatsApp team — we will verify and share the number personally.
+                  </p>
+                </div>
+              )}
+
               <div className="w-full h-px bg-gradient-to-r from-maroon/10 via-gold/30 to-transparent" />
 
               <div className="flex flex-col sm:flex-row gap-3">
-                <a href={`mailto:${selectedProfile.email}`} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-full font-body text-sm font-semibold tracking-[0.08em] uppercase transition-all hover:scale-[1.02]" style={{ background: 'linear-gradient(135deg, #800020, #4A0404)', color: '#FFFFFF' }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                  Send Proposal
+                <a
+                  href={buildWhatsAppRequest(selectedProfile)}
+                  target="_blank" rel="noopener noreferrer"
+                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-full font-body text-sm font-semibold tracking-[0.08em] uppercase transition-all hover:scale-[1.02] hover:shadow-lg"
+                  style={{ background: 'linear-gradient(135deg, #25D366, #128C7E)', color: '#FFFFFF' }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                  Request Contact via WhatsApp
                 </a>
-                {selectedProfile.phone && (
-                  <a href={`tel:${selectedProfile.phone}`} className="flex items-center justify-center gap-2 py-3 rounded-full font-body text-sm font-semibold tracking-[0.08em] uppercase border border-maroon/20 text-maroon hover:bg-maroon hover:text-white transition-all">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                    Call
-                  </a>
-                )}
+                <Link
+                  to="/dashboard"
+                  className="flex items-center justify-center gap-2 py-3 rounded-full font-body text-sm font-semibold tracking-[0.08em] uppercase border border-maroon/20 text-maroon hover:bg-maroon hover:text-white transition-all"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                  My Dashboard
+                </Link>
               </div>
             </div>
           </div>
@@ -269,4 +325,32 @@ function Detail({ label, value, full = false }: { label: string; value: string; 
       <p className="font-body text-sm text-deep-maroon/80">{value}</p>
     </div>
   );
+}
+
+/**
+ * Task 3 — Build a wa.me deep link with the profile's full details so the
+ * WhatsApp manager (+44 7359 859455) can review and share the contact number.
+ */
+function buildWhatsAppRequest(profile: any): string {
+  const manager = (footerContent.whatsapp || '+44 7359 859455').replace(/\s/g, '').replace(/^\+/, '');
+  const lines: string[] = [];
+  lines.push('Assalamualaikum PerfectRishta team,');
+  lines.push('');
+  lines.push('I am interested in the profile below and request their contact details:');
+  lines.push('');
+  lines.push(`🔹 Profile ID: ${profile.id || 'N/A'}`);
+  lines.push(`🔹 Gender: ${profile.gender || 'N/A'}`);
+  lines.push(`🔹 Age: ${profile.age || 'N/A'}`);
+  lines.push(`🔹 Location: ${profile.location || 'N/A'}`);
+  lines.push(`🔹 Education: ${profile.education || 'N/A'}`);
+  lines.push(`🔹 Occupation: ${profile.occupation || 'N/A'}`);
+  lines.push(`🔹 Marital Status: ${profile.maritalStatus || 'N/A'}`);
+  lines.push(`🔹 Plan: ${profile.plan || 'N/A'}`);
+  if (profile.nationality) lines.push(`🔹 Nationality: ${profile.nationality}`);
+  if (profile.sect) lines.push(`🔹 Sect: ${profile.sect}`);
+  if (profile.height) lines.push(`🔹 Height: ${profile.height}`);
+  lines.push('');
+  lines.push('Please can you share the phone/WhatsApp number of this profile with me? Jazak Allah khair.');
+  const text = lines.map(l => encodeURIComponent(l)).join('%0A');
+  return `https://wa.me/${manager}?text=${text}`;
 }
