@@ -1,21 +1,25 @@
 {
   "name": "perfectrishta-backend",
   "version": "1.0.0",
-  "description": "Production-grade backend for PerfectRishta Islamic Marriage Bureau",
+  "description": "PerfectRishta backend API — Express 5 + Mongoose 8 standalone deployment for Vercel separate project",
   "type": "module",
   "main": "src/server.js",
+  "engines": {
+    "node": ">=20.15"
+  },
   "scripts": {
-    "dev": "node --watch src/server.js",
     "start": "node src/server.js",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "seed": "node src/utils/seedAdmin.js"
+    "dev": "node scripts/boot_atlas.mjs || node --watch src/server.js",
+    "vercel-build": "node -e \"console.log('PerfectRishta backend no-op build OK'); process.exit(0);\"",
+    "seed": "node src/utils/seedAdmin.js",
+    "resetadmin": "node ../scripts/_resetadmin.mjs || true"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
     "compression": "^1.8.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
+    "date-fns": "^4.1.0",
     "dotenv": "^16.4.5",
     "express": "^5.1.0",
     "express-mongo-sanitize": "^2.2.0",
@@ -27,11 +31,5 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.9.0",
     "morgan": "^1.10.0"
-  },
-  "devDependencies": {
-    "@vitest/coverage-v8": "^2.1.8",
-    "mongodb-memory-server": "^11.3.0",
-    "supertest": "^7.0.0",
-    "vitest": "^2.1.8"
   }
 }

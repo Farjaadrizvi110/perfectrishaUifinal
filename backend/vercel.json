@@ -1,0 +1,52 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "npm install --no-package-lock --legacy-peer-deps --no-audit --no-fund --include=dev 2>&1 | tail -n 15",
+  "buildCommand": "npm run vercel-build",
+  "outputDirectory": ".",
+  "regions": ["lhr1"],
+  "cleanUrls": true,
+  "functions": {
+    "api/[[...slug]].js": {
+      "maxDuration": 30,
+      "includeFiles": "{src,config,middleware,routes,utils,scripts,node_modules}/**/*.{js,json,mjs,cjs,node}"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api/[[...slug]]"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/api/[[...slug]]"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET,OPTIONS,PATCH,DELETE,POST,PUT"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Authorization, Content-Type, Accept, X-Requested-With"
+        }
+      ]
+    }
+  ]
+}
