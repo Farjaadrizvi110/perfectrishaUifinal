@@ -111,17 +111,19 @@ export default function HeroHome() {
           </div>
         </div>
 
-        <div ref={ctaRef} className="flex flex-col sm:flex-row gap-4 opacity-0">
+        <div ref={ctaRef} className="flex flex-col sm:flex-row gap-4 relative z-[5] pointer-events-auto" style={{ isolation: 'isolate' }}>
           <Link
             to="/join"
-            className="px-10 py-4 rounded-full font-body text-sm font-semibold tracking-[0.1em] uppercase transition-all duration-400 hover:scale-105 hover:shadow-xl text-center"
+            onClick={(e) => { e.stopPropagation(); window.location.href = '/join'; }}
+            className="px-10 py-4 rounded-full font-body text-sm font-semibold tracking-[0.1em] uppercase transition-all duration-400 hover:scale-105 hover:shadow-xl text-center relative z-[6] block"
             style={{ background: '#D4AF37', color: '#4A0404' }}
           >
             Add Your Profile
           </Link>
           <Link
             to="/about"
-            className="px-10 py-4 rounded-full font-body text-sm font-semibold tracking-[0.1em] uppercase border border-white/50 text-white transition-all duration-400 hover:bg-white/10 hover:border-white text-center"
+            onClick={(e) => { e.stopPropagation(); window.location.href = '/about'; }}
+            className="px-10 py-4 rounded-full font-body text-sm font-semibold tracking-[0.1em] uppercase border border-white/50 text-white transition-all duration-400 hover:bg-white/10 hover:border-white text-center relative z-[6] block"
           >
             Learn More
           </Link>
@@ -129,7 +131,7 @@ export default function HeroHome() {
       </div>
 
       {/* Bottom wave */}
-      <div className="absolute bottom-0 left-0 w-full z-[3]">
+      <div className="absolute bottom-0 left-0 w-full z-[3] pointer-events-none">
         <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full">
           <path d="M0 120L60 105C120 90 240 60 360 45C480 30 600 30 720 37.5C840 45 960 60 1080 67.5C1200 75 1320 75 1380 75L1440 75V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z" fill="white"/>
         </svg>

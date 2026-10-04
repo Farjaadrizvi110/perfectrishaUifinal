@@ -1,13 +1,15 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import gsap from 'gsap';
 import { api } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { isLoggedIn, isAdmin, hydrateFromLoginResponse, loading: authLoading } = useAuth();
   const formRef = useRef<HTMLDivElement>(null);
+  const autoLoginTriedRef = useRef(false);
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -35,15 +37,15 @@ export default function LoginPage() {
     setPassword(e.target.value);
   }, []);
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLogin = async (e?: React.FormEvent, overrides?: { loginId?: string; password?: string }) => {
+    e?.preventDefault();
     setError('');
     setLoading(true);
+    const id = (overrides?.loginId ?? loginId).trim();
+    const pw = overrides?.password ?? password;
     try {
-      // Backend now has unified /api/auth/login that handles BOTH members
-      // (uppercase Login ID) AND admins (exact case username) via $or query.
-      // No more dual endpoint fallback — single source of truth.
-      const result = await api.auth.login(loginId.trim(), password);
+      if (!id || !pw) throw new Error('Please enter both Login ID and Password');
+      const result = await api.auth.login(id, pw);
 
       if (!result || !result.user) throw new Error('Invalid Login ID or Password');
 
@@ -60,6 +62,19 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (autoLoginTriedRef.current) return;
+    const urlLoginId = searchParams.get('loginId');
+    const urlPassword = searchParams.get('password');
+    if (urlLoginId && urlPassword) {
+      autoLoginTriedRef.current = true;
+      setLoginId(urlLoginId);
+      setPassword(urlPassword);
+      setShowPassword(true);
+      void handleLogin(undefined, { loginId: urlLoginId, password: urlPassword });
+    }
+  }, [searchParams, authLoading, isLoggedIn]);
 
   return (
     <section className="relative w-full overflow-hidden" style={{ background: 'linear-gradient(180deg, #FDFBF7 0%, #FFFFFF 50%, #FDFBF7 100%)', paddingTop: 'clamp(100px, 14vh, 160px)', paddingBottom: 'clamp(60px, 8vh, 100px)', minHeight: '100vh' }}>
