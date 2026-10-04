@@ -4,10 +4,45 @@
  * and direct URL in production via VITE_API_URL env.
  */
 
-const BASE_URL = import.meta.env.VITE_API_URL || '/api';
+function sanitizeBaseUrl(raw: string | undefined): string {
+  if (!raw) return "/api";
+  let url = String(raw).trim();
+  // Remove trailing slash if any
+  while (url.length > 1 && url.endsWith("/")) url = url.slice(0, -1);
+  // Remove legacy cPanel mount path prefixes we used on old hosting - NEVER allowed anymore.
+  const LEGACY_PREFIXES = [
+    "/perfectrishtaback-end/api",
+    "/perfectrishtabackend/api",
+    "/perfectrishta-back-end/api",
+    "/perfectrishtaback-end",
+    "/perfectrishtabackend",
+    "/perfectrishta-back-end",
+  ];
+  for (const p of LEGACY_PREFIXES) {
+    if (url === p) return "/api";
+    if (url.startsWith(`${p}/`)) return `/api${url.slice(p.length)}`;
+  }
+  // Bare "/api" preferred
+  if (!url) return "/api";
+  if (url === "/api" || url.startsWith("/api/")) return url;
+  // If user pastes a full domain (http / https), also strip legacy mount paths there too
+  try {
+    const u = new URL(url);
+    const legacy = LEGACY_PREFIXES.some((p) => u.pathname.startsWith(p));
+    if (legacy || u.pathname.startsWith("/perfectrishta")) {
+      // Don't trust external full URLs for same-origin Vercel deployment.
+      return "/api";
+    }
+  } catch {
+    // Not URL, keep going.
+  }
+  return url || "/api";
+}
+
+const BASE_URL = sanitizeBaseUrl(import.meta.env.VITE_API_URL);
 
 export function getToken(): string | null {
-  return localStorage.getItem('perfectrishta_token');
+  return localStorage.getItem("perfectrishta_token");
 }
 
 export function setToken(token: string | null) {
