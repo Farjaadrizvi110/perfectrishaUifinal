@@ -35,24 +35,6 @@ app.set(
       : "loopback",
 );
 
-// ── CloudLinux Alt-Node mount prefix workaround ──
-// cPanel Setup Node.js App mounts at URL prefix but some configs do NOT strip it from req.url before passing to Express.
-// Normalise "/perfectrishtaback-end/api/health -> "/api/health" so our routes match regardless.
-app.use((req, _res, next) => {
-  const mounts = [
-    "/perfectrishtaback-end",
-    "/node-api-internal",
-    "/node-api-internal-v2",
-  ];
-  for (const m of mounts) {
-    if (req.url.startsWith(m + "/") || req.url === m) {
-      req.url = req.url.slice(m.length) || "/";
-      break;
-    }
-  }
-  next();
-});
-
 // ── Security & core middleware ──
 app.use(helmet());
 const CORS_ORIGINS = new Set(

@@ -19,18 +19,6 @@ function sanitizeBaseUrl(raw: string | undefined): string {
   }
   let url = String(raw).trim();
   while (url.length > 1 && url.endsWith("/")) url = url.slice(0, -1);
-  const LEGACY_PREFIXES = [
-    "/perfectrishtaback-end/api",
-    "/perfectrishtabackend/api",
-    "/perfectrishta-back-end/api",
-    "/perfectrishtaback-end",
-    "/perfectrishtabackend",
-    "/perfectrishta-back-end",
-  ];
-  for (const p of LEGACY_PREFIXES) {
-    if (url === p) return "/api";
-    if (url.startsWith(`${p}/`)) return `/api${url.slice(p.length)}`;
-  }
   if (!url) {
     if (import.meta.env.MODE === "production") return PRODUCTION_BACKEND_FALLBACK;
     return "/api";
@@ -49,14 +37,7 @@ function sanitizeBaseUrl(raw: string | undefined): string {
     const hostOk = allowedHostPatterns.some(
       (p) => u.hostname === p || u.hostname.endsWith(p),
     );
-    // If URL path includes cPanel mount → strip but keep host
     let pathName = u.pathname;
-    for (const p of LEGACY_PREFIXES) {
-      if (pathName.startsWith(p)) {
-        pathName = `/api${pathName.slice(p.length)}`;
-        break;
-      }
-    }
     if (
       pathName === "/" ||
       (!pathName.endsWith("/api") && !pathName.startsWith("/api/"))
