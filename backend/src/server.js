@@ -19,6 +19,22 @@ import { seedAdmin } from "./utils/seedAdmin.js";
 
 const app = express();
 
+// ── Trust proxy (Vercel / Cloudflare / reverse proxy X-Forwarded-*) ──
+// Vercel Platform sets "X-Forwarded-For", "X-Forwarded-Proto", "X-Forwarded-Host".
+// express-rate-limit v7+ VALIDATES trust proxy settings: if XFF header is set
+// and trust proxy === false (default) it throws ValidationError causes 401/500.
+// Fix: trust 127.0.0.1 loopback + unlimited hops on managed platforms VERCEL=true
+// or NODE_ENV=production. On localhost dev it still works trust proxy doesn't
+// affect direct socket address ip resolution.
+app.set(
+  "trust proxy",
+  process.env.VERCEL
+    ? true
+    : process.env.NODE_ENV === "production"
+      ? true
+      : "loopback",
+);
+
 // ── CloudLinux Alt-Node mount prefix workaround ──
 // cPanel Setup Node.js App mounts at URL prefix but some configs do NOT strip it from req.url before passing to Express.
 // Normalise "/perfectrishtaback-end/api/health -> "/api/health" so our routes match regardless.
