@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
 import gsap from 'gsap';
 
 export default function HeroHome() {
@@ -112,21 +111,35 @@ export default function HeroHome() {
         </div>
 
         <div ref={ctaRef} className="flex flex-col sm:flex-row gap-4 relative z-[5] pointer-events-auto" style={{ isolation: 'isolate' }}>
-          <Link
-            to="/join"
-            onClick={(e) => { e.stopPropagation(); window.location.href = '/join'; }}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              const host = window.location.hostname.toLowerCase();
+              const naked = host === 'perfectrishta.co.uk' || host === 'perfectrisha-uifinal-fordomain.vercel.app';
+              const base = naked ? 'https://www.perfectrishta.co.uk' : '';
+              window.location.href = `${base}/join`;
+            }}
             className="px-10 py-4 rounded-full font-body text-sm font-semibold tracking-[0.1em] uppercase transition-all duration-400 hover:scale-105 hover:shadow-xl text-center relative z-[6] block"
             style={{ background: '#D4AF37', color: '#4A0404' }}
           >
             Add Your Profile
-          </Link>
-          <Link
-            to="/about"
-            onClick={(e) => { e.stopPropagation(); window.location.href = '/about'; }}
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              const host = window.location.hostname.toLowerCase();
+              const naked = host === 'perfectrishta.co.uk' || host === 'perfectrisha-uifinal-fordomain.vercel.app';
+              const base = naked ? 'https://www.perfectrishta.co.uk' : '';
+              window.location.href = `${base}/about`;
+            }}
             className="px-10 py-4 rounded-full font-body text-sm font-semibold tracking-[0.1em] uppercase border border-white/50 text-white transition-all duration-400 hover:bg-white/10 hover:border-white text-center relative z-[6] block"
           >
             Learn More
-          </Link>
+          </button>
         </div>
       </div>
 
