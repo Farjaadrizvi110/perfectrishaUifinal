@@ -9,7 +9,7 @@
   "trailingSlash": false,
   "regions": ["lhr1"],
   "functions": {
-    "api/[[..slug]].js": {
+    "api/[[...slug]].js": {
       "maxDuration": 30
     }
   },
