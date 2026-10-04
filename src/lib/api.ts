@@ -4,8 +4,19 @@
  * and direct URL in production via VITE_API_URL env.
  */
 
+const PRODUCTION_BACKEND_FALLBACK = "https://perfectrisha-backend.vercel.app/api";
+
 function sanitizeBaseUrl(raw: string | undefined): string {
-  if (!raw) return "/api";
+  if (!raw) {
+    if (import.meta.env.MODE === "production") {
+      console.info(
+        "[api.ts] VITE_API_URL not set in production; using built-in production fallback:",
+        PRODUCTION_BACKEND_FALLBACK,
+      );
+      return PRODUCTION_BACKEND_FALLBACK;
+    }
+    return "/api";
+  }
   let url = String(raw).trim();
   while (url.length > 1 && url.endsWith("/")) url = url.slice(0, -1);
   const LEGACY_PREFIXES = [
@@ -20,7 +31,10 @@ function sanitizeBaseUrl(raw: string | undefined): string {
     if (url === p) return "/api";
     if (url.startsWith(`${p}/`)) return `/api${url.slice(p.length)}`;
   }
-  if (!url) return "/api";
+  if (!url) {
+    if (import.meta.env.MODE === "production") return PRODUCTION_BACKEND_FALLBACK;
+    return "/api";
+  }
   if (url === "/api" || url.startsWith("/api/")) return url;
   // Allow trusted remote backends on Vercel / custom domain when user wants separate backend deploy
   try {
@@ -43,7 +57,10 @@ function sanitizeBaseUrl(raw: string | undefined): string {
         break;
       }
     }
-    if (pathName === "/" || !pathName.endsWith("/api") && !pathName.startsWith("/api/")) {
+    if (
+      pathName === "/" ||
+      (!pathName.endsWith("/api") && !pathName.startsWith("/api/"))
+    ) {
       if (!pathName.endsWith("/api")) {
         pathName = pathName.replace(/\/$/, "") + "/api";
       }
@@ -51,13 +68,19 @@ function sanitizeBaseUrl(raw: string | undefined): string {
     if (hostOk) {
       return `${u.protocol}//${u.host}${pathName}`;
     }
+    if (import.meta.env.MODE === "production") return PRODUCTION_BACKEND_FALLBACK;
     return "/api";
   } catch {
+    if (import.meta.env.MODE === "production" && !url) return PRODUCTION_BACKEND_FALLBACK;
     return url || "/api";
   }
 }
 
 const BASE_URL = sanitizeBaseUrl(import.meta.env.VITE_API_URL);
+
+if (typeof window !== "undefined") {
+  console.debug("[api.ts] Computed BASE_URL:", BASE_URL);
+}
 
 export function getToken(): string | null {
   return localStorage.getItem("perfectrishta_token");
