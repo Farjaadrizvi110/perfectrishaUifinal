@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
 import { useRef } from 'react';
 import { api } from '@/lib/api';
+import { useAuth } from '@/hooks/useAuth';
 
 interface PendingProfile {
   _id: string;
@@ -22,6 +23,11 @@ interface PendingProfile {
   plan?: string;
   status: 'pending' | 'approved' | 'rejected';
   createdAt: string;
+  nationality?: string;
+  ethnicity?: string;
+  languages?: string;
+  sect?: string;
+  [k: string]: any;
 }
 
 function getProfileId(p: PendingProfile | any): string {
@@ -62,6 +68,25 @@ interface DeleteDialogState {
   name: string;
   loginId?: string;
   loading: boolean;
+  error: string;
+}
+
+interface ViewDialogState {
+  open: boolean;
+  mode: 'profile' | 'registration';
+  id: string;
+  name: string;
+  loading: boolean;
+  error: string;
+  data: Record<string, any>;
+  user?: Record<string, any>;
+}
+
+interface RejectDialogState {
+  open: boolean;
+  profile: PendingProfile | null;
+  reason: string;
+  submitting: boolean;
   error: string;
 }
 
@@ -106,7 +131,7 @@ const EDIT_FIELDS_PARTNER = [
   { key: 'openToDivorcee', label: 'Open to Divorcee', type: 'select', options: ['No', 'Yes', 'Consider case by case'] },
   { key: 'openToWidow', label: 'Open to Widow(er)', type: 'select', options: ['No', 'Yes', 'Consider case by case'] },
   { key: 'acceptChildren', label: 'Accept Children from Previous', type: 'select', options: ['No', 'Yes - Any number', 'Yes - max 2', 'Undecided'] },
-] as const;
+];
 
 const EDIT_FIELDS_LONG = [
   { key: 'aboutMe', label: 'About Me', type: 'textarea' },
@@ -118,18 +143,25 @@ const EDIT_FIELDS_ADMIN_ONLY_PROFILE = [
   { key: 'loginId', label: 'Member Login ID', type: 'text', placeholder: 'PR-SOMETHING-001' },
   { key: 'password', label: 'Change Member Password', type: 'password', placeholder: '(leave blank to keep current)' },
   { key: 'membershipTier', label: 'Plan / Tier', type: 'select', options: ['free', 'silver', 'gold', 'platinum'] },
-  { key: 'membershipStatus', label: 'Account Status', type: 'select', options: ['active', 'inactive', 'suspended'] },
+  { key: 'membershipStatus', label: 'Account Status', type: 'select', options: ['active', 'expired', 'pending'] },
   { key: 'plan', label: 'Plan (Profile card display)', type: 'select', options: ['Free', 'Silver', 'Gold', 'Platinum'] },
   { key: 'isActive', label: 'Visible in Proposals', type: 'select', options: ['true', 'false'] },
   { key: 'isPaid', label: 'Paid Member Flag', type: 'select', options: ['true', 'false'] },
 ] as const;
 
 const EDIT_FIELDS_ADMIN_ONLY_REGISTRATION = [
-  { key: 'plan', label: 'Plan (pending registration)', type: 'select', options: ['Free', 'Silver', 'Gold', 'Platinum'] },
+  { key: 'loginId', label: 'Member Login ID', type: 'text', placeholder: 'PR-SOMETHING-001' },
+  { key: 'password', label: 'Change Member Password', type: 'password', placeholder: '(leave blank to keep current)' },
+  { key: 'membershipTier', label: 'Plan / Tier', type: 'select', options: ['free', 'silver', 'gold', 'platinum'] },
+  { key: 'membershipStatus', label: 'Account Status', type: 'select', options: ['active', 'expired', 'pending'] },
+  { key: 'plan', label: 'Plan (Profile card display)', type: 'select', options: ['Free', 'Silver', 'Gold', 'Platinum'] },
+  { key: 'isActive', label: 'Visible in Proposals', type: 'select', options: ['true', 'false'] },
+  { key: 'isPaid', label: 'Paid Member Flag', type: 'select', options: ['true', 'false'] },
 ] as const;
 
 export default function AdminPage() {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const listRef = useRef<HTMLDivElement>(null);
   const [profiles, setProfiles] = useState<PendingProfile[]>([]);
   const [approvedUsers, setApprovedUsers] = useState<any[]>([]);
@@ -208,6 +240,9 @@ export default function AdminPage() {
       const user = data.user || {};
       const profile = data.profile || {};
       const reg = data.registration || {};
+      delete (user as any).password;
+      delete (profile as any).password;
+      delete (reg as any).password;
       const values: Record<string, any> = {};
       for (const field of EDIT_FIELDS_CORE) values[field.key] = profile[field.key] ?? reg[field.key] ?? '';
       for (const field of EDIT_FIELDS_PARTNER) values[field.key] = profile[field.key] ?? reg[field.key] ?? '';
@@ -215,7 +250,7 @@ export default function AdminPage() {
       for (const field of EDIT_FIELDS_ADMIN_ONLY_PROFILE) {
         if (field.key === 'loginId' || field.key === 'membershipTier' || field.key === 'membershipStatus') {
           values[field.key] = user[field.key] ?? '';
-        } else {
+        } else if (field.key !== 'password') {
           values[field.key] = profile[field.key] ?? '';
         }
       }
@@ -255,7 +290,8 @@ export default function AdminPage() {
           else patch[key] = v;
           continue;
         }
-        if (v === undefined || v === null || v === '') continue;
+        if (v === undefined || v === null) continue;
+        if (v === '' && key !== 'membershipStatus' && key !== 'membershipTier') continue;
         if (typeof v === 'string') patch[key] = v;
         else patch[key] = v;
       }
@@ -266,6 +302,7 @@ export default function AdminPage() {
       }
       setEditDialog((s) => ({ ...s, submitting: false, saved: true }));
       showToast('success', editDialog.mode === 'profile' ? 'Profile updated successfully' : 'Registration updated successfully');
+      setFilters({ search: '', gender: 'any', plan: 'any', minAge: '', maxAge: '' });
       await loadData();
       setTimeout(() => closeEditDialog(), 550);
     } catch (err: any) {
@@ -280,6 +317,79 @@ export default function AdminPage() {
   const closeDeleteDialog = useCallback(() => {
     setDeleteDialog({ open: false, mode: 'registration', id: '', name: '', loginId: undefined, loading: false, error: '' });
   }, []);
+
+  // ── View Profile / Registration dialog
+  const [viewDialog, setViewDialog] = useState<ViewDialogState>({
+    open: false, mode: 'registration', id: '', name: '', loading: false, error: '', data: {}, user: undefined,
+  });
+  const closeViewDialog = useCallback(() => {
+    setViewDialog({ open: false, mode: 'registration', id: '', name: '', loading: false, error: '', data: {}, user: undefined });
+  }, []);
+  const openViewForRegistration = useCallback(async (id: string, name: string) => {
+    setViewDialog({ open: true, mode: 'registration', id, name, loading: true, error: '', data: {}, user: undefined });
+    try {
+      const res = await api.admin.getRegistration(id);
+      const data = res.registration || res || {};
+      setViewDialog((s) => ({ ...s, loading: false, data }));
+    } catch (err: any) {
+      setViewDialog((s) => ({ ...s, loading: false, error: err.message || 'Failed to load registration' }));
+    }
+  }, []);
+  const openViewForProfile = useCallback(async (id: string, name: string) => {
+    setViewDialog({ open: true, mode: 'profile', id, name, loading: true, error: '', data: {}, user: undefined });
+    try {
+      const res = await api.admin.getProfile(id);
+      const data = res.profile || res.registration || res || {};
+      const user = res.user || undefined;
+      setViewDialog((s) => ({ ...s, loading: false, data, user }));
+    } catch (err: any) {
+      setViewDialog((s) => ({ ...s, loading: false, error: err.message || 'Failed to load profile' }));
+    }
+  }, []);
+  const handleDownloadPdf = useCallback(() => {
+    setTimeout(() => {
+      try { window.print(); } catch {}
+    }, 80);
+  }, []);
+
+  // ── Reject Registration dialog (with required reason, then HARD delete)
+  const [rejectDialog, setRejectDialog] = useState<RejectDialogState>({
+    open: false, profile: null, reason: '', submitting: false, error: '',
+  });
+  const closeRejectDialog = useCallback(() => {
+    setRejectDialog({ open: false, profile: null, reason: '', submitting: false, error: '' });
+  }, []);
+  const openRejectDialog = useCallback((profile: PendingProfile) => {
+    setRejectDialog({ open: true, profile, reason: '', submitting: false, error: '' });
+  }, []);
+  const submitRejectDialog = useCallback(async () => {
+    if (!rejectDialog.profile) return;
+    const reason = rejectDialog.reason.trim();
+    if (!reason) {
+      setRejectDialog((s) => ({ ...s, error: 'Please enter a rejection reason (required).' }));
+      return;
+    }
+    const pid = getProfileId(rejectDialog.profile);
+    if (!pid) {
+      setRejectDialog((s) => ({ ...s, error: 'Profile has no valid id' }));
+      return;
+    }
+    setRejectDialog((s) => ({ ...s, submitting: true, error: '' }));
+    try {
+      // Store the rejection reason on the registration briefly, then hard-delete
+      // so the reason is captured in server logs / audit trail via update first, then delete.
+      try {
+        await api.admin.updateRegistration(pid, { rejectionReason: reason, status: 'rejected' });
+      } catch {}
+      // Now HARD DELETE so it is NEVER saved in the database (user explicit requirement).
+      await api.admin.deleteRegistration(pid);
+      await loadData();
+      closeRejectDialog();
+      showToast('success', `Registration for ${rejectDialog.profile ? (rejectDialog.profile.firstName + ' ' + rejectDialog.profile.lastName).trim() || `${rejectDialog.profile.gender}, ${rejectDialog.profile.age}` : 'applicant'} permanently rejected and removed.`);
+    } catch (err: any) {
+      setRejectDialog((s) => ({ ...s, submitting: false, error: err.message || 'Rejection failed' }));
+    }
+  }, [rejectDialog, loadData, closeRejectDialog]);
   const openDeleteForProfile = useCallback((profileId: string, name: string, loginId?: string) => {
     setDeleteDialog({ open: true, mode: 'profile', id: profileId, name, loginId, loading: false, error: '' });
   }, []);
@@ -328,24 +438,25 @@ export default function AdminPage() {
       setVerified('loading');
       const token = api.getToken();
       if (!token) {
-        navigate('/login', { replace: true });
+        logout();
+        setTimeout(() => navigate('/login', { replace: true }), 0);
         return;
       }
       try {
         const meData = await api.auth.me();
         if (meData.user.role !== 'admin') {
-          api.logout();
-          navigate('/login', { replace: true });
+          logout();
+          setTimeout(() => navigate('/login', { replace: true }), 0);
           return;
         }
         setVerified('admin');
         loadData();
       } catch {
-        api.logout();
-        navigate('/login', { replace: true });
+        logout();
+        setTimeout(() => navigate('/login', { replace: true }), 20);
       }
     })();
-  }, [navigate]);
+  }, [navigate, logout]);
 
   useEffect(() => {
     if (listRef.current && verified === 'admin') {
@@ -394,18 +505,6 @@ export default function AdminPage() {
     }
   }, [approveDialog, loadData, closeApproveDialog]);
 
-  const handleReject = useCallback(async (profile: PendingProfile) => {
-    if (!confirm('Reject this registration? They will not be shown in proposals.')) return;
-    const pid = getProfileId(profile);
-    if (!pid) { setError('Profile has no valid id'); return; }
-    try {
-      await api.admin.reject(pid, 'Rejected by admin');
-      await loadData();
-    } catch (err: any) {
-      setError(err.message || 'Rejection failed');
-    }
-  }, [loadData]);
-
   const copyCred = (what: 'id' | 'pw' | 'both') => {
     if (!generatedCred) return;
     const text =
@@ -417,7 +516,17 @@ export default function AdminPage() {
         navigator.clipboard.writeText(text);
       } else {
         const ta = document.createElement('textarea');
-        ta.value = text; document.body.appendChild(ta); ta.select();
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        ta.style.top = '0';
+        ta.style.width = '1px';
+        ta.style.height = '1px';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        ta.setSelectionRange(0, text.length);
         try { document.execCommand('copy'); } catch {}
         document.body.removeChild(ta);
       }
@@ -427,9 +536,8 @@ export default function AdminPage() {
   };
 
   const handleLogout = () => {
-    api.logout();
-    localStorage.removeItem('perfectrishta_current_member');
-    navigate('/login', { replace: true });
+    logout();
+    setTimeout(() => navigate('/login', { replace: true }), 20);
   };
 
   const filterMatch = useCallback((p: PendingProfile): boolean => {
@@ -459,6 +567,7 @@ export default function AdminPage() {
     if (p.status === 'approved') {
       const pid = getProfileId(p);
       const user = approvedUsers.find((u: any) => {
+        if (u.role === 'admin') return false;
         const rid = (u.registrationId?._id || u.registrationId || u.registration?._id || u.id || '').toString();
         return rid === pid || u.profileId === pid;
       });
@@ -489,7 +598,23 @@ export default function AdminPage() {
 
   return (
     <section className="relative w-full overflow-hidden" style={{ background: 'linear-gradient(180deg, #FDFBF7 0%, #FFFFFF 50%, #FDFBF7 100%)', paddingTop: 'clamp(100px, 14vh, 160px)', paddingBottom: 'clamp(60px, 8vh, 100px)', minHeight: '100vh' }}>
-      <img src="/images/bg-floral.jpg" alt="" className="absolute top-0 right-0 w-[300px] opacity-[0.04] z-0 pointer-events-none" />
+      <style>{`
+        @media print {
+          @page { size: A4; margin: 12mm; }
+          body * { visibility: hidden !important; }
+          .profile-print-area, .profile-print-area * { visibility: visible !important; }
+          .profile-print-area { position: absolute; left: 0; top: 0; width: 100%; }
+          .no-print, .no-print * { display: none !important; }
+          .profile-print-area .print-row { display: flex; gap: 12pt; border-bottom: 0.5pt solid #d4d4d4; padding: 6pt 0; }
+          .profile-print-area .print-label { width: 38%; font-weight: 600; color: #800020; font-size: 9.5pt; }
+          .profile-print-area .print-value { width: 62%; font-size: 9.5pt; color: #1f2937; word-break: break-word; }
+          .profile-print-area .print-section-title { font-weight: 700; color: #4A0404; font-size: 11pt; margin: 14pt 0 6pt 0; padding-bottom: 4pt; border-bottom: 1pt solid #D4AF37; }
+          .profile-print-area .print-header { text-align: center; border-bottom: 2pt double #800020; padding-bottom: 10pt; margin-bottom: 10pt; }
+          .profile-print-area .print-header h1 { font-size: 18pt; color: #800020; margin: 0 0 4pt 0; }
+          .profile-print-area .print-header p { font-size: 10pt; color: #6b7280; margin: 0; }
+        }
+      `}</style>
+      <img src="/images/bg-floral.jpg" alt="" className="absolute top-0 right-0 w-[300px] opacity-[0.04] z-0 pointer-events-none no-print" />
 
       <div className="relative z-10 max-w-[900px] mx-auto px-6">
         <div className="flex justify-between items-center mb-6 gap-3 flex-wrap">
@@ -656,6 +781,7 @@ export default function AdminPage() {
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-body text-[10px] tracking-[0.18em] uppercase text-deep-maroon/45">Login ID</span>
                   <button
+                    type="button"
                     onClick={() => copyCred('id')}
                     className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider transition-colors"
                     style={{ background: copied === 'id' || copied === 'both' ? 'rgba(34,197,94,0.12)' : 'rgba(128,0,32,0.06)', color: copied === 'id' || copied === 'both' ? '#15803d' : '#800020' }}
@@ -669,6 +795,7 @@ export default function AdminPage() {
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-body text-[10px] tracking-[0.18em] uppercase text-deep-maroon/45">Password</span>
                   <button
+                    type="button"
                     onClick={() => copyCred('pw')}
                     className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider transition-colors"
                     style={{ background: copied === 'pw' || copied === 'both' ? 'rgba(34,197,94,0.12)' : 'rgba(128,0,32,0.06)', color: copied === 'pw' || copied === 'both' ? '#15803d' : '#800020' }}
@@ -682,6 +809,7 @@ export default function AdminPage() {
 
             <div className="relative z-10 mt-5 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 justify-between">
               <button
+                type="button"
                 onClick={() => copyCred('both')}
                 className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full font-body text-xs font-semibold tracking-[0.12em] uppercase transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
                 style={{ background: copied === 'both' ? 'linear-gradient(135deg, #15803d, #166534)' : 'linear-gradient(135deg, #800020, #4A0404)', color: '#fff' }}
@@ -763,6 +891,13 @@ export default function AdminPage() {
                       </button>
                       <div className="flex gap-1.5 flex-wrap">
                         <button
+                          type="button"
+                          onClick={() => openViewForRegistration(pid, name || `${profile.gender} ${profile.age} ${profile.location}`)}
+                          className="px-3.5 py-2 rounded-full font-body text-[11px] font-semibold tracking-[0.05em] uppercase border border-maroon/20 text-maroon transition-all duration-300 hover:bg-maroon/5 shrink-0"
+                        >
+                          👁 View
+                        </button>
+                        <button
                           onClick={() => openEditDialogForRegistration(pid)}
                           className="px-3.5 py-2 rounded-full font-body text-[11px] font-semibold tracking-[0.05em] uppercase border border-maroon/20 text-maroon transition-all duration-300 hover:bg-maroon/5 shrink-0"
                         >
@@ -776,7 +911,8 @@ export default function AdminPage() {
                         </button>
                       </div>
                       <button
-                        onClick={() => handleReject(profile)}
+                        type="button"
+                        onClick={() => openRejectDialog(profile)}
                         className="px-5 py-2.5 rounded-full font-body text-[11px] font-semibold tracking-[0.08em] uppercase border border-red-200 text-red-600 transition-all duration-300 hover:bg-red-50 shrink-0"
                       >
                         ❌ Reject
@@ -785,6 +921,13 @@ export default function AdminPage() {
                   )}
                   {activeTab === 'rejected' && (
                     <div className="flex gap-1.5 flex-wrap justify-end">
+                      <button
+                        type="button"
+                        onClick={() => openViewForRegistration(pid, name || `${profile.gender} ${profile.age} ${profile.location}`)}
+                        className="px-4 py-2 rounded-full font-body text-[11px] font-semibold tracking-[0.05em] uppercase border border-maroon/20 text-maroon transition-all duration-300 hover:bg-maroon/5 shrink-0"
+                      >
+                        👁 View
+                      </button>
                       <button
                         onClick={() => openEditDialogForRegistration(pid)}
                         className="px-4 py-2 rounded-full font-body text-[11px] font-semibold tracking-[0.05em] uppercase border border-maroon/20 text-maroon transition-all duration-300 hover:bg-maroon/5 shrink-0"
@@ -823,6 +966,13 @@ export default function AdminPage() {
                           <span className="font-body text-[10px] text-deep-maroon/40 italic">No login found</span>
                         )}
                         <div className="flex gap-1.5 flex-wrap justify-end">
+                          <button
+                            type="button"
+                            onClick={() => profileId ? openViewForProfile(String(profileId), name || `${profile.gender} ${profile.age} ${profile.location}`) : openViewForRegistration(pid, name || `${profile.gender} ${profile.age} ${profile.location}`)}
+                            className="px-4 py-2 rounded-full font-body text-[11px] font-semibold tracking-[0.05em] uppercase border border-maroon/20 text-maroon transition-all duration-300 hover:bg-maroon/5 shrink-0"
+                          >
+                            👁 View
+                          </button>
                           <button
                             onClick={() => profileId ? openEditDialogForProfile(String(profileId)) : openEditDialogForRegistration(pid)}
                             className="px-4 py-2 rounded-full font-body text-[11px] font-semibold tracking-[0.05em] uppercase border border-maroon/20 text-maroon transition-all duration-300 hover:bg-maroon/5 shrink-0"
@@ -1076,7 +1226,7 @@ export default function AdminPage() {
                         <div key={f.key}>
                           <label className="font-body text-[11px] font-semibold tracking-wide uppercase text-deep-maroon/65 mb-1.5 block">{f.label}</label>
                           {f.type === 'textarea' ? (
-                            <textarea rows={2}
+                            <textarea rows={2} maxLength={2000}
                               value={(editDialog.values[f.key] ?? '') as string}
                               onChange={(e) => setEditDialog((s) => ({ ...s, values: { ...s.values, [f.key]: e.target.value } }))}
                               className="w-full px-3.5 py-2.5 rounded-xl border border-maroon/10 bg-cream/30 font-body text-sm text-deep-maroon placeholder:text-deep-maroon/30 focus:outline-none focus:border-gold/60 focus:ring-1 focus:ring-gold/30 transition-all resize-y"/>
@@ -1108,7 +1258,7 @@ export default function AdminPage() {
                         <div key={f.key}>
                           <label className="font-body text-[11px] font-semibold tracking-wide uppercase text-deep-maroon/65 mb-1.5 block">{f.label}</label>
                           {f.type === 'textarea' ? (
-                            <textarea rows={2} value={(editDialog.values[f.key] ?? '') as string}
+                            <textarea rows={2} maxLength={2000} value={(editDialog.values[f.key] ?? '') as string}
                               onChange={(e) => setEditDialog((s) => ({ ...s, values: { ...s.values, [f.key]: e.target.value } }))}
                               className="w-full px-3.5 py-2.5 rounded-xl border border-maroon/10 bg-cream/30 font-body text-sm text-deep-maroon placeholder:text-deep-maroon/30 focus:outline-none focus:border-gold/60 focus:ring-1 focus:ring-gold/30 transition-all resize-y"/>
                           ) : f.type === 'select' ? (
@@ -1137,7 +1287,7 @@ export default function AdminPage() {
                       {EDIT_FIELDS_LONG.map((f) => (
                         <div key={f.key}>
                           <label className="font-body text-[11px] font-semibold tracking-wide uppercase text-deep-maroon/65 mb-1.5 block">{f.label}</label>
-                          <textarea rows={5} value={(editDialog.values[f.key] ?? '') as string}
+                          <textarea rows={5} maxLength={2000} value={(editDialog.values[f.key] ?? '') as string}
                             onChange={(e) => setEditDialog((s) => ({ ...s, values: { ...s.values, [f.key]: e.target.value } }))}
                             className="w-full px-3.5 py-2.5 rounded-xl border border-maroon/10 bg-cream/30 font-body text-sm text-deep-maroon placeholder:text-deep-maroon/30 focus:outline-none focus:border-gold/60 focus:ring-1 focus:ring-gold/30 transition-all resize-y"/>
                         </div>
@@ -1158,6 +1308,10 @@ export default function AdminPage() {
                             <div className="relative">
                               <input
                                 type={editDialog.showPassword ? 'text' : 'password'}
+                                name="new-password"
+                                autoComplete="new-password"
+                                data-form-type="other"
+                                data-1p-ignore
                                 value={(editDialog.values[f.key] ?? '') as string}
                                 placeholder={f.placeholder || ''}
                                 onChange={(e) => setEditDialog((s) => ({ ...s, values: { ...s.values, [f.key]: e.target.value } }))}
@@ -1277,6 +1431,236 @@ export default function AdminPage() {
                   )}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Reject Registration dialog (required reason) ── */}
+      {rejectDialog.open && rejectDialog.profile && (
+        <div className="fixed inset-0 z-[118] flex items-center justify-center p-4"
+          role="dialog" aria-modal="true" aria-labelledby="admin-reject-title">
+          <div className="absolute inset-0 bg-black/55 backdrop-blur-sm" onClick={!rejectDialog.submitting ? closeRejectDialog : undefined} />
+          <div className="relative w-full max-w-lg rounded-3xl bg-white border border-red-100 shadow-2xl overflow-hidden">
+            <div className="px-6 sm:px-8 pt-6 pb-5" style={{ background: 'linear-gradient(135deg, #b91c1c, #7f1d1d)' }}>
+              <div className="flex items-start gap-3 flex-wrap">
+                <span className="inline-flex items-center justify-center w-11 h-11 rounded-full bg-white/15 border border-white/20 shrink-0">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F3E5AB" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/><path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0z"/>
+                  </svg>
+                </span>
+                <div className="flex-1 min-w-0">
+                  <h2 id="admin-reject-title" className="font-display text-xl text-white font-medium">Reject Registration</h2>
+                  <p className="font-body text-xs text-white/80 mt-1 break-words">
+                    For:&nbsp;<span className="font-semibold text-white">
+                      {[rejectDialog.profile.firstName, rejectDialog.profile.lastName].filter(Boolean).join(' ').trim() || `${rejectDialog.profile.gender}, ${rejectDialog.profile.age} · ${rejectDialog.profile.location}`}
+                    </span>
+                  </p>
+                </div>
+                <button onClick={!rejectDialog.submitting ? closeRejectDialog : undefined} disabled={rejectDialog.submitting}
+                  className="shrink-0 text-white/70 hover:text-white transition-colors p-1.5 rounded-xl hover:bg-white/10 disabled:opacity-40" aria-label="Close">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <form
+              onSubmit={(e) => { e.preventDefault(); submitRejectDialog(); }}
+              className="px-6 sm:px-8 py-6 space-y-4"
+            >
+              <div className="p-4 rounded-2xl bg-red-50 border border-red-200">
+                <p className="font-body text-xs text-red-900 font-semibold uppercase tracking-wider mb-2">⚠️  Rejection is permanent</p>
+                <p className="font-body text-[12px] text-red-800 leading-relaxed">
+                  After confirming, the registration will be <strong>permanently removed from the database</strong> and will NOT appear in any dashboard tab.
+                </p>
+              </div>
+              <div>
+                <label className="font-body text-[11px] font-semibold tracking-wide uppercase text-maroon mb-1.5 block">
+                  Rejection Reason <span className="text-red-600">*</span>
+                </label>
+                <textarea
+                  rows={4}
+                  required
+                  maxLength={500}
+                  value={rejectDialog.reason}
+                  onChange={(e) => setRejectDialog((s) => ({ ...s, reason: e.target.value, error: '' }))}
+                  placeholder="Please provide a brief reason for rejecting this profile (e.g. Incomplete info, invalid phone, duplicate registration…)"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-maroon/10 bg-cream/30 font-body text-sm text-deep-maroon placeholder:text-deep-maroon/30 focus:outline-none focus:border-gold/60 focus:ring-1 focus:ring-gold/30 transition-all resize-y"
+                />
+                <p className="mt-1.5 font-body text-[10px] text-deep-maroon/45 text-right">
+                  {rejectDialog.reason.length}/500 characters
+                </p>
+              </div>
+              {rejectDialog.error && (
+                <div className="p-3 rounded-xl bg-red-50 border border-red-200">
+                  <p className="font-body text-xs text-red-700">{rejectDialog.error}</p>
+                </div>
+              )}
+              <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  disabled={rejectDialog.submitting}
+                  onClick={closeRejectDialog}
+                  className="inline-flex items-center justify-center px-5 py-3 rounded-full font-body text-xs font-semibold tracking-[0.08em] uppercase border border-maroon/15 text-deep-maroon/70 hover:bg-maroon/5 transition-all disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={rejectDialog.submitting || !rejectDialog.reason.trim()}
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full font-body text-xs font-semibold tracking-[0.12em] uppercase transition-all duration-300 hover:scale-[1.01] hover:shadow-lg disabled:opacity-60"
+                  style={{ background: 'linear-gradient(135deg, #b91c1c, #7f1d1d)', color: '#fff' }}
+                >
+                  {rejectDialog.submitting ? (
+                    <><svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Rejecting…</>
+                  ) : (
+                    <>❌ Confirm Reject &amp; Delete</>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── View Profile / Registration dialog + PDF download ── */}
+      {viewDialog.open && (
+        <div className="fixed inset-0 z-[108] flex items-start justify-center p-3 sm:p-6 overflow-y-auto"
+          role="dialog" aria-modal="true" aria-labelledby="admin-view-title">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm no-print" onClick={!viewDialog.loading ? closeViewDialog : undefined} />
+          <div className="relative w-full max-w-4xl my-6 rounded-3xl bg-white border border-maroon/10 shadow-2xl overflow-hidden">
+            <div className="sticky top-0 z-10 px-6 sm:px-10 pt-6 pb-5 no-print" style={{ background: 'linear-gradient(135deg, #800020, #4A0404)' }}>
+              <div className="flex items-start justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="inline-flex items-center justify-center w-11 h-11 rounded-full bg-white/15 border border-white/20 shrink-0">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F3E5AB" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  </span>
+                  <div className="min-w-0">
+                    <h2 id="admin-view-title" className="font-display text-xl text-white font-medium break-words">
+                      {viewDialog.mode === 'profile' ? 'Approved Member Profile' : 'Registration Preview'}
+                    </h2>
+                    <p className="font-body text-xs text-white/75 mt-1 break-words">
+                      <span className="font-semibold text-white/90">{viewDialog.name || '(Unnamed)'}</span>
+                      &nbsp;·&nbsp; ID: <span className="font-mono text-white/90 select-all">{viewDialog.id}</span>
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleDownloadPdf}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full font-body text-[11px] font-semibold tracking-[0.08em] uppercase bg-white text-maroon hover:bg-white/90 transition-colors shadow-sm"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><polyline points="6 15 12 21 18 15"/></svg>
+                    🖨 Download PDF
+                  </button>
+                  <button onClick={!viewDialog.loading ? closeViewDialog : undefined} disabled={viewDialog.loading}
+                    className="shrink-0 text-white/70 hover:text-white transition-colors p-1.5 rounded-xl hover:bg-white/10 disabled:opacity-40" aria-label="Close">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="profile-print-area px-6 sm:px-10 py-6 max-h-[72vh] overflow-y-auto">
+              <div className="print-header no-print" style={{ display: 'none' }}>
+                <h1>Perfect Rishta — Profile Report</h1>
+                <p>Generated {new Date().toLocaleString('en-GB')}</p>
+              </div>
+              <div className="print-header" aria-hidden="true">
+                <h1 style={{ margin: 0, fontSize: '20px', color: '#800020', fontFamily: 'Georgia, serif' }}>Perfect Rishta</h1>
+                <p style={{ margin: '4pt 0 0 0', fontSize: '9pt', color: '#6b7280' }}>
+                  {viewDialog.mode === 'profile' ? 'Approved Member Profile Report' : 'Registration Review Report'}
+                  &nbsp;·&nbsp; Generated {new Date().toLocaleString('en-GB')}
+                </p>
+              </div>
+              {viewDialog.loading && (
+                <div className="text-center py-10 no-print">
+                  <div className="inline-block w-8 h-8 border-2 border-maroon/15 border-t-maroon rounded-full animate-spin mb-3" />
+                  <p className="font-body text-xs text-deep-maroon/50">Loading profile…</p>
+                </div>
+              )}
+              {!viewDialog.loading && viewDialog.error && (
+                <div className="p-4 rounded-2xl bg-red-50 border border-red-200 no-print">
+                  <p className="font-body text-xs text-red-700">{viewDialog.error}</p>
+                </div>
+              )}
+              {!viewDialog.loading && !viewDialog.error && (
+                <div className="space-y-1">
+                  {(() => {
+                    const printRow = (label: string, value: any) => {
+                      const v = value === undefined || value === null || value === '' ? '—' : String(value);
+                      return (
+                        <div className="print-row" key={label}>
+                          <div className="print-label">{label}</div>
+                          <div className="print-value">{v}</div>
+                        </div>
+                      );
+                    };
+                    const sectionTitle = (title: string) => (
+                      <div key={title} className="print-section-title">{title}</div>
+                    );
+                    const v = viewDialog.data;
+                    const u = viewDialog.user;
+                    return (
+                      <>
+                        {sectionTitle(viewDialog.mode === 'profile' ? 'Member Login Credentials' : 'Registration Status')}
+                        {viewDialog.mode === 'profile' && u ? (
+                          <>
+                            {printRow('Login ID', u.loginId)}
+                            {printRow('Account Status', u.membershipStatus)}
+                            {printRow('Membership Tier', u.membershipTier ? String(u.membershipTier).charAt(0).toUpperCase() + String(u.membershipTier).slice(1) : '')}
+                            {printRow('Email', u.email || v.email)}
+                          </>
+                        ) : (
+                          <>
+                            {printRow('Status', v.status)}
+                            {printRow('Plan / Tier', v.plan)}
+                            {printRow('Submitted At', v.createdAt ? new Date(v.createdAt).toLocaleString('en-GB') : '')}
+                          </>
+                        )}
+                        {sectionTitle('Personal & Contact')}
+                        {EDIT_FIELDS_CORE.filter((f) => f.type !== 'textarea').map((f) => printRow(f.label, v[f.key]))}
+                        {EDIT_FIELDS_CORE.filter((f) => f.type === 'textarea').map((f) => printRow(f.label, v[f.key]))}
+                        {sectionTitle('Partner Preferences')}
+                        {EDIT_FIELDS_PARTNER.map((f) => printRow(f.label, v[f.key]))}
+                        {sectionTitle('Long Descriptions')}
+                        {EDIT_FIELDS_LONG.map((f) => printRow(f.label, v[f.key]))}
+                        {viewDialog.mode === 'profile' && (
+                          <>
+                            {sectionTitle('Profile Visibility')}
+                            {printRow('Plan (display)', v.plan)}
+                            {printRow('Visible in Proposals', v.isActive === true || v.isActive === 'true' ? 'Yes' : v.isActive === false || v.isActive === 'false' ? 'No' : '—')}
+                            {printRow('Paid Member Flag', v.isPaid === true || v.isPaid === 'true' ? 'Yes' : v.isPaid === false || v.isPaid === 'false' ? 'No' : '—')}
+                          </>
+                        )}
+                        {v.rejectionReason && (
+                          <>
+                            {sectionTitle('Rejection Info')}
+                            {printRow('Rejection Reason', v.rejectionReason)}
+                          </>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
+            </div>
+
+            <div className="sticky bottom-0 z-10 px-6 sm:px-10 py-4 border-t border-maroon/8 bg-gradient-to-b from-white via-white to-cream/40 flex items-center justify-end gap-3 no-print">
+              <button type="button" disabled={viewDialog.loading}
+                onClick={closeViewDialog}
+                className="inline-flex items-center justify-center px-5 py-3 rounded-full font-body text-xs font-semibold tracking-[0.08em] uppercase border border-maroon/15 text-deep-maroon/70 hover:bg-maroon/5 transition-all disabled:opacity-50">
+                Close
+              </button>
+              <button type="button" disabled={viewDialog.loading}
+                onClick={handleDownloadPdf}
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full font-body text-xs font-semibold tracking-[0.12em] uppercase transition-all duration-300 hover:scale-[1.01] hover:shadow-lg disabled:opacity-60"
+                style={{ background: 'linear-gradient(135deg, #800020, #4A0404)', color: '#fff' }}>
+                🖨 Download PDF
+              </button>
             </div>
           </div>
         </div>

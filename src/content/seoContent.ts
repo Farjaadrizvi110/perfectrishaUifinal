@@ -179,6 +179,19 @@ export const membershipContent = {
   note: 'All fees are non-refundable. Membership renews automatically unless cancelled 7 days before expiry.',
 };
 
+// Payment Details (Bank Transfer) — Single source of truth
+export const paymentDetails = {
+  bankName: 'NatWest',
+  accountName: 'RDP DESIGN AND PRINT',
+  sortCode: '01-00-04',
+  accountNumber: '17722640',
+  referenceHint: 'Use your Full Name as the payment reference',
+  confirmWhatsApp: '+44 7359 859455',
+  confirmWhatsAppLink: 'https://wa.me/447359859455',
+  instruction:
+    'After submitting your registration, please pay the membership fee for your selected plan via the bank details below. Once paid, share the payment screenshot with our team on WhatsApp for confirmation — we will then approve your profile and send your login credentials within 48 hours, In Sha Allah.',
+};
+
 // Footer Content
 export const footerContent = {
   heading: 'Begin Your Blessed Journey Today',

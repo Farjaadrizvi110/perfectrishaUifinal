@@ -8,9 +8,18 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "regions": ["lhr1"],
+  "functions": {
+    "api/[[..slug]].js": {
+      "maxDuration": 30
+    }
+  },
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/api/(.*)",
+      "destination": "/api/[[...slug]]"
+    },
+    {
+      "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
   ],

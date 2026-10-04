@@ -84,9 +84,12 @@ export async function login(req, res, next) {
       return res.status(400).json({ error: "Invalid Login ID or Password" });
     }
 
-    const user = await User.findOne({ loginId: loginId.toUpperCase() }).select(
-      "+password",
-    );
+    const loginIdRaw = String(loginId).trim();
+    const loginIdUpper = loginIdRaw.toUpperCase();
+
+    const user = await User.findOne({
+      $or: [{ loginId: loginIdUpper }, { username: loginIdRaw }],
+    }).select("+password").exec();
 
     if (!user) {
       return res.status(401).json({ error: "Invalid Login ID or Password" });
@@ -124,6 +127,7 @@ export async function login(req, res, next) {
       user: {
         id: user._id,
         loginId: user.loginId,
+        username: user.username,
         role: user.role,
         membershipTier: user.membershipTier,
         membershipStatus: user.membershipStatus,

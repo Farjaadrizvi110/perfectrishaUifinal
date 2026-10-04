@@ -47,7 +47,12 @@ const registrationSchema = new mongoose.Schema(
     sect: { type: String, trim: true, default: "" },
     hijabi: { type: String, trim: true, default: "" },
     beardStyle: { type: String, trim: true, default: "" },
-    religiousExpectations: { type: String, trim: true, default: "" },
+    religiousExpectations: {
+      type: String,
+      trim: true,
+      default: "",
+      maxlength: 2000,
+    },
     // ── Education & Employment ──
     education: { type: String, trim: true, default: "" },
     occupation: { type: String, trim: true, default: "" },
@@ -61,7 +66,7 @@ const registrationSchema = new mongoose.Schema(
     maritalStatus: { type: String, trim: true, required: true },
     secondWife: { type: String, trim: true, default: "" },
     // ── About ──
-    aboutMe: { type: String, trim: true, default: "" },
+    aboutMe: { type: String, trim: true, default: "", maxlength: 2000 },
     // ── Looking For ──
     partnerEducation: { type: String, trim: true, default: "" },
     partnerOccupation: { type: String, trim: true, default: "" },
@@ -75,8 +80,13 @@ const registrationSchema = new mongoose.Schema(
     openToDivorcee: { type: String, trim: true, default: "" },
     openToWidow: { type: String, trim: true, default: "" },
     acceptChildren: { type: String, trim: true, default: "" },
-    partnerDescription: { type: String, trim: true, default: "" },
-    otherInfo: { type: String, trim: true, default: "" },
+    partnerDescription: {
+      type: String,
+      trim: true,
+      default: "",
+      maxlength: 2000,
+    },
+    otherInfo: { type: String, trim: true, default: "", maxlength: 2000 },
     confirmInfo: { type: Boolean, default: false },
     // ── Admin actions ──
     reviewedBy: {

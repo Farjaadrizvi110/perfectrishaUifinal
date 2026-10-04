@@ -409,15 +409,17 @@ export async function updateProfileByAdmin(req, res, next) {
     }
 
     // ─────────────────── 2. Password change validation ───────────────────
-    let newPasswordHash = null;
-    if (typeof patch.password === "string" && patch.password.length) {
-      if (patch.password.length < 6 || patch.password.length > 64) {
-        return res.status(400).json({
-          error: "Password must be between 6 and 64 characters long.",
-        });
-      }
-      const bcrypt = (await import("bcryptjs")).default;
-      newPasswordHash = await bcrypt.hash(patch.password, 10);
+    const newPassword =
+      typeof patch.password === "string" && patch.password.length
+        ? patch.password
+        : null;
+    if (
+      newPassword !== null &&
+      (newPassword.length < 6 || newPassword.length > 64)
+    ) {
+      return res.status(400).json({
+        error: "Password must be between 6 and 64 characters long.",
+      });
     }
 
     // ─────────────────── 3. Profile fields whitelist ───────────────────
@@ -491,7 +493,7 @@ export async function updateProfileByAdmin(req, res, next) {
         if (typeof patch.loginId === "string" && patch.loginId.trim().length) {
           user.loginId = patch.loginId.trim();
         }
-        if (newPasswordHash) user.password = newPasswordHash;
+        if (newPassword) user.password = newPassword;
         if (patch.membershipTier) user.membershipTier = patch.membershipTier;
         if (patch.membershipStatus)
           user.membershipStatus = patch.membershipStatus;
@@ -576,6 +578,11 @@ export async function deleteProfileByAdmin(req, res, next) {
  *
  * Applies whitelist identical to updateProfileByAdmin so admin can fix typos in
  * applicant-submitted data without having to reject and re-register the person.
+ *
+ * EDGE-CASE SAFETY: If an approved profile is sometimes opened through this endpoint
+ * (front-end fallback path when Profile._id cannot be resolved), also) —
+ * additionally syncs loginId/password/membershipTier/membershipStatus onto the User
+ * document so credential changes actually work for logins).
  */
 export async function updateRegistrationByAdmin(req, res, next) {
   try {
@@ -585,6 +592,46 @@ export async function updateRegistrationByAdmin(req, res, next) {
     const registration = await Registration.findById(id);
     if (!registration) {
       return res.status(404).json({ error: "Registration not found" });
+    }
+
+    // ─────────────────── 1. Login ID change validation (if this registration
+    // is already approved → unique loginId is enforced on User — just in case
+    // admin opened this endpoint via fallback).
+    let newLoginId = null;
+    if (typeof patch.loginId === "string" && patch.loginId.trim().length) {
+      newLoginId = patch.loginId.trim();
+      if (!/^[A-Za-z0-9_\-]{3,32}$/.test(newLoginId)) {
+        return res.status(400).json({
+          error:
+            "Invalid Login ID. Use 3-32 letters, digits, hyphen or underscore (no spaces).",
+        });
+      }
+      const existingUser = await User.findOne({
+        registrationId: { $ne: registration._id },
+        loginId: new RegExp(
+          "^" + newLoginId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "$",
+          "i",
+        ),
+      });
+      if (existingUser) {
+        return res.status(409).json({
+          error: "This Login ID is already in use by another member.",
+        });
+      }
+    }
+
+    // ─────────────────── 2. Password change validation & hashing
+    const newPassword =
+      typeof patch.password === "string" && patch.password.length
+        ? patch.password
+        : null;
+    if (
+      newPassword !== null &&
+      (newPassword.length < 6 || newPassword.length > 64)
+    ) {
+      return res.status(400).json({
+        error: "Password must be between 6 and 64 characters long.",
+      });
     }
 
     const fields = [
@@ -629,6 +676,8 @@ export async function updateRegistrationByAdmin(req, res, next) {
       "partnerDescription",
       "otherInfo",
       "plan",
+      "isPaid",
+      "isActive",
     ];
     for (const k of fields) {
       if (patch[k] !== undefined) registration[k] = patch[k];
@@ -638,10 +687,46 @@ export async function updateRegistrationByAdmin(req, res, next) {
     registration.updatedAt = new Date();
     await registration.save();
 
+    // ─────────────────── 3. If already approved → also sync to Profile + User docs.
+    // This mirrors updateProfileByAdmin so edits apply via fallback path also.
+    if (registration.status === "approved") {
+      // ── Profile doc (dual-source Dashboard fallback → keep in sync)
+      const profile = await Profile.findOne({
+        registrationId: registration._id,
+      });
+      if (profile) {
+        for (const k of fields) {
+          if (patch[k] !== undefined) profile[k] = patch[k];
+        }
+        profile.updatedBy = registration.updatedBy;
+        profile.updatedAt = registration.updatedAt;
+        await profile.save();
+      }
+
+      // ── User doc (loginId, password, tier, status). Password field has
+      // select:false on the schema but we can SET directly on document and
+      // call save() — Mongoose stores it normally, next login compare works.
+      const user = await User.findOne({ registrationId: registration._id });
+      if (user) {
+        if (newLoginId) user.loginId = newLoginId;
+        if (newPassword) user.password = newPassword;
+        if (patch.membershipTier) user.membershipTier = patch.membershipTier;
+        if (patch.membershipStatus)
+          user.membershipStatus = patch.membershipStatus;
+        await user.save();
+      }
+    }
+
+    const updatedFields = fields.filter((k) => patch[k] !== undefined);
+    if (newLoginId) updatedFields.push("loginId");
+    if (newPassword) updatedFields.push("password");
+    if (patch.membershipTier) updatedFields.push("membershipTier");
+    if (patch.membershipStatus) updatedFields.push("membershipStatus");
+
     res.json({
       message: "Registration updated successfully",
       registrationId: registration._id,
-      updatedFields: fields.filter((k) => patch[k] !== undefined),
+      updatedFields,
     });
   } catch (err) {
     next(err);

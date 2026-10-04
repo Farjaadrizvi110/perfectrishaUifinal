@@ -63,9 +63,16 @@ export default function Footer() {
           {footerContent.description}
         </p>
 
-        <button className="animate-footer mt-8 px-10 py-4 rounded-full font-body text-sm font-semibold tracking-[0.1em] uppercase transition-all duration-400 hover:scale-105 hover:shadow-xl opacity-0" style={{ background: '#D4AF37', color: '#4A0404' }}>
+        <a
+          href={`https://wa.me/${(footerContent.whatsapp ?? footerContent.phone).replace(/[^\d]/g, '')}?text=${encodeURIComponent('Assalamualaikum Team Perfect Rishta, I would like to enquire about PerfectRishta services. JazakAllah Khair.')}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="animate-footer mt-8 px-10 py-4 rounded-full font-body text-sm font-semibold tracking-[0.1em] uppercase transition-all duration-400 hover:scale-105 hover:shadow-xl opacity-0 inline-block"
+          style={{ background: '#D4AF37', color: '#4A0404', textDecoration: 'none' }}
+          title={`Enquire on WhatsApp — ${footerContent.whatsapp ?? footerContent.phone}`}
+        >
           {footerContent.cta}
-        </button>
+        </a>
 
         {/* Contact details */}
         <div className="animate-footer mt-14 flex flex-wrap items-center justify-center gap-x-8 gap-y-4 sm:gap-10 opacity-0">

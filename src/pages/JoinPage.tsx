@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useAuth } from '@/hooks/useAuth';
+import { paymentDetails } from '@/content/seoContent';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -75,6 +77,8 @@ const initialForm: ProfileForm = {
 };
 
 export default function JoinPage() {
+  const navigate = useNavigate();
+  const { isLoggedIn, isAdmin, loading: authLoading } = useAuth();
   const sectionRef = useRef<HTMLElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -82,6 +86,13 @@ export default function JoinPage() {
   const [submitted, setSubmitted] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (isLoggedIn) {
+      navigate(isAdmin ? '/admin' : '/dashboard', { replace: true });
+    }
+  }, [isLoggedIn, isAdmin, authLoading, navigate]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -171,7 +182,7 @@ export default function JoinPage() {
   }, []);
 
   const TextArea = useMemo(() => {
-    return ({ name, value, onChange, placeholder, rows = 3 }: any) => (
+    return ({ name, value, onChange, placeholder, rows = 3, ...rest }: any) => (
       <textarea
         name={name}
         value={value}
@@ -180,6 +191,7 @@ export default function JoinPage() {
         placeholder={placeholder}
         autoComplete="off"
         spellCheck={false}
+        {...rest}
         className="w-full px-4 py-3 rounded-xl border border-maroon/10 bg-cream/30 font-body text-sm text-deep-maroon placeholder:text-deep-maroon/30 focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/30 transition-all resize-none"
       />
     );
@@ -253,6 +265,78 @@ export default function JoinPage() {
             <p className="font-body text-sm text-deep-maroon/60 max-w-[400px] mx-auto leading-relaxed mb-2">
               Your profile has been submitted successfully. Our team will carefully review your information.
             </p>
+
+            {/* Payment & Bank Details */}
+            <div className="mt-2 mb-4 rounded-2xl border border-gold/30 bg-gradient-to-br from-gold/5 via-white to-gold/10 p-6 sm:p-7 text-left shadow-sm">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="w-8 h-8 rounded-full bg-gradient-to-br from-gold to-amber-600 flex items-center justify-center flex-shrink-0">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4A0404" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="5" width="20" height="14" rx="2"/>
+                    <line x1="2" y1="10" x2="22" y2="10"/>
+                    <line x1="6" y1="15" x2="10" y2="15"/>
+                  </svg>
+                </span>
+                <h4 className="font-display text-lg text-deep-maroon font-medium">Next Step — Pay Membership Fee</h4>
+              </div>
+              <p className="font-body text-sm text-deep-maroon/70 leading-relaxed mb-5">
+                {paymentDetails.instruction}
+              </p>
+
+              <div className="rounded-xl border border-maroon/10 bg-white/90 p-5 space-y-3">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <span className="font-body text-xs uppercase tracking-wider text-deep-maroon/45">Bank</span>
+                  <span className="font-body text-sm font-semibold text-deep-maroon">{paymentDetails.bankName}</span>
+                </div>
+                <div className="h-px bg-maroon/8" />
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <span className="font-body text-xs uppercase tracking-wider text-deep-maroon/45">Account Name</span>
+                  <span className="font-body text-sm font-semibold text-deep-maroon">{paymentDetails.accountName}</span>
+                </div>
+                <div className="h-px bg-maroon/8" />
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <span className="font-body text-xs uppercase tracking-wider text-deep-maroon/45">Sort Code</span>
+                  <span className="font-mono text-sm font-semibold text-maroon tracking-wider">{paymentDetails.sortCode}</span>
+                </div>
+                <div className="h-px bg-maroon/8" />
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <span className="font-body text-xs uppercase tracking-wider text-deep-maroon/45">Account Number</span>
+                  <span className="font-mono text-sm font-semibold text-maroon tracking-wider">{paymentDetails.accountNumber}</span>
+                </div>
+                <div className="h-px bg-maroon/8" />
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <span className="font-body text-xs uppercase tracking-wider text-deep-maroon/45">Reference</span>
+                  <span className="font-body text-xs font-medium text-deep-maroon text-right max-w-[240px]">{paymentDetails.referenceHint}</span>
+                </div>
+              </div>
+
+              <div className="mt-5 flex items-start gap-3 rounded-xl border border-emerald-600/20 bg-emerald-50/60 p-4">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 flex-shrink-0">
+                  <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                </svg>
+                <div className="space-y-1.5">
+                  <p className="font-body text-sm font-semibold text-emerald-900">
+                    Share screenshot on WhatsApp for confirmation
+                  </p>
+                  <p className="font-body text-xs text-emerald-800/80">
+                    Once paid, send a screenshot of your bank transfer receipt to our team on WhatsApp and we will confirm your payment and approve your profile.
+                  </p>
+                  <a
+                    href={`${paymentDetails.confirmWhatsAppLink}?text=${encodeURIComponent(`Assalamualaikum Team Perfect Rishta, I have submitted my registration and made the membership fee payment. Please find the payment screenshot attached for confirmation. JazakAllah Khair.`)}`}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="inline-flex items-center gap-2 mt-1.5 px-4 py-2.5 rounded-full font-body text-xs font-semibold tracking-wider uppercase text-white transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
+                    style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="#fff" stroke="none">
+                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                    </svg>
+                    WhatsApp {paymentDetails.confirmWhatsApp}
+                  </a>
+                </div>
+              </div>
+            </div>
+            {/* End Payment & Bank Details */}
+
             <p className="font-body text-sm text-deep-maroon/60 max-w-[400px] mx-auto leading-relaxed mb-6">
               We will approve your profile after inspection and get back to you within <strong className="text-maroon">48 hours</strong>, In Sha Allah.
             </p>
@@ -397,7 +481,7 @@ export default function JoinPage() {
                 )}
                 <div>
                   <Label>Religious Expectations</Label>
-                  <TextArea name="religiousExpectations" value={form.religiousExpectations} onChange={handleChange} placeholder="Describe your religious expectations..." rows={2} />
+                  <TextArea name="religiousExpectations" value={form.religiousExpectations} onChange={handleChange} placeholder="Describe your religious expectations..." rows={2} maxLength={2000} />
                 </div>
               </div>
             </div>
@@ -495,7 +579,7 @@ export default function JoinPage() {
             {/* About Me */}
             <div>
               <SectionTitle title="About Me" />
-              <TextArea name="aboutMe" value={form.aboutMe} onChange={handleChange} placeholder="Tell us about yourself, your personality, values, and what makes you unique..." rows={5} />
+              <TextArea name="aboutMe" value={form.aboutMe} onChange={handleChange} placeholder="Tell us about yourself, your personality, values, and what makes you unique..." rows={5} maxLength={2000} />
             </div>
 
             {/* What I am looking for */}
@@ -582,11 +666,11 @@ export default function JoinPage() {
                 </FieldRow>
                 <div>
                   <Label>Describe what you are looking for</Label>
-                  <TextArea name="partnerDescription" value={form.partnerDescription} onChange={handleChange} placeholder="Describe your ideal partner and what qualities matter most to you..." rows={4} />
+                  <TextArea name="partnerDescription" value={form.partnerDescription} onChange={handleChange} placeholder="Describe your ideal partner and what qualities matter most to you..." rows={4} maxLength={2000} />
                 </div>
                 <div>
                   <Label>Any other information</Label>
-                  <TextArea name="otherInfo" value={form.otherInfo} onChange={handleChange} placeholder="Any additional details you'd like to share..." rows={2} />
+                  <TextArea name="otherInfo" value={form.otherInfo} onChange={handleChange} placeholder="Any additional details you'd like to share..." rows={2} maxLength={2000} />
                 </div>
               </div>
             </div>

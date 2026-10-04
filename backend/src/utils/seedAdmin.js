@@ -22,27 +22,37 @@ export async function seedAdmin() {
       return;
     }
 
-    const existing = await User.findOne({ username, role: 'admin' });
+    const bcrypt = (await import('bcryptjs')).default;
+    const existing = await User.findOne({ role: 'admin' }).select('+password').exec();
     if (existing) {
-      const bcrypt = (await import('bcryptjs')).default;
-      // existing.password could be missing due to select: false — force refetch
-      const withPw = await User.findById(existing._id).select('+password').exec();
-      if (!withPw) { return; }
-      try {
-        const isSame = await bcrypt.compare(password, withPw.password);
-        if (!isSame) {
-          withPw.password = password;
-          await withPw.save();
-          console.log(`[Seed] Admin password updated for ${username}`);
-        }
-      } catch {
+      let changed = false;
+      if (existing.username !== username) {
+        existing.username = username;
+        changed = true;
+      }
+      if (!existing.password) {
+        existing.password = password;
+        changed = true;
+      } else {
         try {
-          withPw.password = password;
-          await withPw.save();
-          console.log(`[Seed] Admin password re-saved for ${username}`);
-        } catch (e2) {
-          console.error('[Seed] Admin password update failed:', e2.message);
-        }
+          const same = await bcrypt.compare(password, existing.password);
+          if (!same) { existing.password = password; changed = true; }
+        } catch { existing.password = password; changed = true; }
+      }
+      if (existing.membershipStatus !== 'active') {
+        existing.membershipStatus = 'active';
+        changed = true;
+      }
+      if ((existing.loginAttempts ?? 0) !== 0 || existing.lockUntil) {
+        existing.loginAttempts = 0;
+        existing.lockUntil = undefined;
+        changed = true;
+      }
+      if (changed) {
+        await existing.save();
+        console.log(`[Seed] Admin account ensured & unlocked: ${username}`);
+      } else {
+        console.log(`[Seed] Admin account verified (ready): ${username}`);
       }
       return;
     }
@@ -52,6 +62,8 @@ export async function seedAdmin() {
       password,
       role: 'admin',
       membershipStatus: 'active',
+      loginAttempts: 0,
+      lockUntil: undefined,
     });
     console.log(`[Seed] Admin account created: ${username}`);
   } catch (err) {

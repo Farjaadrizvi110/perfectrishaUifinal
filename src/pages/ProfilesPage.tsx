@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
+import { useAuth } from '@/hooks/useAuth';
 
 /**
  * Task 5 + Task 6: No guest user access to profiles.
@@ -11,16 +12,34 @@ import { api } from '@/lib/api';
  */
 export default function ProfilesPage() {
   const navigate = useNavigate();
+  const { logout } = useAuth();
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    const token = api.getToken();
-    if (!token) {
-      navigate('/login', { replace: true });
-      return;
-    }
-    navigate('/proposals', { replace: true });
-  }, [navigate]);
+    const go = async () => {
+      const token = api.getToken();
+      if (!token) {
+        logout();
+        setTimeout(() => navigate('/login', { replace: true }), 0);
+        return;
+      }
+      try {
+        // Validate the token actually works BEFORE sending member to proposals.
+        // If backend returns 401 → wipe token immediately so member cannot see proposals.
+        const me: any = await api.auth.me();
+        if (!me || !me.user || me.user.membershipStatus !== 'active') {
+          logout();
+          setTimeout(() => navigate('/login', { replace: true }), 0);
+          return;
+        }
+        navigate('/proposals', { replace: true });
+      } catch (e: any) {
+        logout();
+        setTimeout(() => navigate('/login', { replace: true }), 20);
+      }
+    };
+    go();
+  }, [navigate, logout]);
 
   return (
     <section

@@ -36,7 +36,7 @@ const profileSchema = new mongoose.Schema(
     sect: { type: String, default: "" },
     hijabi: { type: String, default: "" },
     beardStyle: { type: String, default: "" },
-    religiousExpectations: { type: String, default: "" },
+    religiousExpectations: { type: String, default: "", maxlength: 2000 },
     // ── Education & Employment ──
     education: { type: String, default: "" },
     occupation: { type: String, default: "" },
@@ -50,7 +50,7 @@ const profileSchema = new mongoose.Schema(
     maritalStatus: { type: String, required: true },
     secondWife: { type: String, default: "" },
     // ── About ──
-    aboutMe: { type: String, default: "" },
+    aboutMe: { type: String, default: "", maxlength: 2000 },
     // ── Looking For ──
     partnerEducation: { type: String, default: "" },
     partnerOccupation: { type: String, default: "" },
@@ -64,8 +64,8 @@ const profileSchema = new mongoose.Schema(
     openToDivorcee: { type: String, default: "" },
     openToWidow: { type: String, default: "" },
     acceptChildren: { type: String, default: "" },
-    partnerDescription: { type: String, default: "" },
-    otherInfo: { type: String, default: "" },
+    partnerDescription: { type: String, default: "", maxlength: 2000 },
+    otherInfo: { type: String, default: "", maxlength: 2000 },
     // ── Membership ──
     plan: {
       type: String,

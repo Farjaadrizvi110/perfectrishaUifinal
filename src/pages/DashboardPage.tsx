@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { api } from '@/lib/api';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { footerContent } from '@/content/seoContent';
+import { useAuth } from '@/hooks/useAuth';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -24,6 +24,7 @@ interface MeData {
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const { logout, refresh, loading: authLoading, isAdmin, isLoggedIn } = useAuth();
   const sectionRef = useRef<HTMLElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const heroRef = useRef<HTMLDivElement>(null);
@@ -33,31 +34,43 @@ export default function DashboardPage() {
 
   useEffect(() => {
     window.scrollTo(0, 0);
+    let cancelled = false;
     (async () => {
-      const token = api.getToken();
-      if (!token) {
-        navigate('/login');
+      if (authLoading) return;
+      if (!isLoggedIn) {
+        setTimeout(() => navigate('/login', { replace: true }), 0);
+        return;
+      }
+      if (isAdmin) {
+        setTimeout(() => navigate('/admin', { replace: true }), 0);
         return;
       }
       try {
-        const data = (await api.auth.me()) as MeData;
-        if (data?.user?.role === 'admin') {
-          navigate('/admin', { replace: true });
+        const updated = (await refresh()) as any;
+        if (cancelled) return;
+        const data: any = updated ? { user: updated as any, registration: {}, profile: {} } : null;
+        if (!data) throw new Error('No me data');
+        // If data.user doesn't carry names/contact, re-fetch full via api.auth.me (useAuth refresh returns user-level info)
+        const full = (await import('@/lib/api')).api.auth.me();
+        const meFull = (await full) as MeData;
+        if (cancelled) return;
+        if (meFull?.user?.role === 'admin') {
+          setTimeout(() => navigate('/admin', { replace: true }), 0);
           return;
         }
-        setMe(data);
+        setMe(meFull);
       } catch {
-        api.logout();
-        navigate('/login');
+        logout();
+        setTimeout(() => navigate('/login', { replace: true }), 20);
         return;
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
 
     // Animate AFTER paint (requestAnimationFrame twice) so layout is fully ready and opacity classes (removed defaults) don't flicker.
     const id1 = requestAnimationFrame(() => {
-      const id2 = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
         if (headerRef.current) {
           const items = headerRef.current.querySelectorAll('.animate-item');
           gsap.fromTo(items, { opacity: 0, y: 25 },
@@ -78,13 +91,12 @@ export default function DashboardPage() {
       });
     });
 
-    return () => { cancelAnimationFrame(id1); ScrollTrigger.getAll().forEach(t => t.kill()); };
-  }, [navigate]);
+    return () => { cancelled = true; cancelAnimationFrame(id1); ScrollTrigger.getAll().forEach(t => t.kill()); };
+  }, [navigate, authLoading, isLoggedIn, isAdmin, refresh, logout]);
 
   const handleLogout = () => {
-    api.logout();
-    localStorage.removeItem('perfectrishta_current_member');
-    navigate('/login');
+    logout();
+    setTimeout(() => navigate('/login', { replace: true }), 20);
   };
 
   const reg = me?.registration;

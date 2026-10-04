@@ -10,7 +10,31 @@ export const skipInTest = () => isTestEnv;
 
 function makeSkip(localOpt) {
   if (localOpt && typeof localOpt === "function") return localOpt;
-  return skipInTest;
+  // On non-production environments, also trust loopback (localhost dev machines)
+  // so quick "try again" clicks never hit the rate wall from a single developer machine.
+  const LOOPBACK = new Set([
+    "127.0.0.1",
+    "::1",
+    "::ffff:127.0.0.1",
+    undefined,
+    "",
+  ]);
+  return (req) => {
+    if (isTestEnv) return true;
+    if (!isDevEnv) return false;
+    const ip =
+      (req.ip && String(req.ip).trim()) ||
+      (req.socket && req.socket.remoteAddress) ||
+      "";
+    return (
+      LOOPBACK.has(ip) ||
+      LOOPBACK.has(
+        String(req.headers["x-forwarded-for"] || "")
+          .split(",")[0]
+          .trim(),
+      )
+    );
+  };
 }
 
 /**

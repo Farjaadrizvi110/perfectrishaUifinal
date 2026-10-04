@@ -27,3 +27,23 @@ dist-ssr
 package-lock.json
 node_modules/.package-lock.json
 
+# Build artifacts / zips (never commit)
+*.zip
+dist.zip
+frontend-dist-*.zip
+backend-full-*.zip
+backend/.zip
+
+# Staging folders (cPanel zip prep local only)
+backend/_tmp/
+backend/_zipstage/
+.trae/
+
+# Secrets / env (never commit backend .env with real passwords)
+.env
+backend/.env
+.env.*
+
+# Local one-off scripts
+_resetadmin.mjs
+backend/_resetadmin.mjs

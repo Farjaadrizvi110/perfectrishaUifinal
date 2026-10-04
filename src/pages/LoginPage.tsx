@@ -2,15 +2,24 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import gsap from 'gsap';
 import { api } from '@/lib/api';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { isLoggedIn, isAdmin, hydrateFromLoginResponse, loading: authLoading } = useAuth();
   const formRef = useRef<HTMLDivElement>(null);
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (isLoggedIn) {
+      navigate(isAdmin ? '/admin' : '/dashboard', { replace: true });
+    }
+  }, [isLoggedIn, isAdmin, authLoading, navigate]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -31,37 +40,19 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      let result: any = null;
-      let usedAdminLogin = false;
+      // Backend now has unified /api/auth/login that handles BOTH members
+      // (uppercase Login ID) AND admins (exact case username) via $or query.
+      // No more dual endpoint fallback — single source of truth.
+      const result = await api.auth.login(loginId.trim(), password);
 
-      try {
-        result = await api.auth.login(loginId, password);
-      } catch (_memberErr) {
-        try {
-          result = await api.auth.adminLogin(loginId, password);
-          usedAdminLogin = true;
-        } catch (_adminErr) {
-          // both failed — throw outer error below
-          throw new Error('Invalid Login ID or Password');
-        }
-      }
+      if (!result || !result.user) throw new Error('Invalid Login ID or Password');
 
-      if (!result) throw new Error('Invalid Login ID or Password');
+      hydrateFromLoginResponse(result);
 
-      api.setToken(result.token);
-      localStorage.setItem('perfectrishta_current_member', JSON.stringify({
-        loginId: result.user.loginId || result.user.username,
-        role: result.user.role,
-        plan: result.user.membershipTier,
-        membershipStatus: result.user.membershipStatus,
-        loggedInAt: new Date().toISOString(),
-      }));
-
-      // Task 1: single page unified login — route admin to /admin, everyone else to /dashboard
-      if (usedAdminLogin || result.user.role === 'admin') {
-        navigate('/admin');
+      if (result.user.role === 'admin') {
+        navigate('/admin', { replace: true });
       } else {
-        navigate('/dashboard');
+        navigate('/dashboard', { replace: true });
       }
     } catch (err: any) {
       setError(err.message || 'Invalid Login ID or Password');

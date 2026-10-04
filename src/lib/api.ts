@@ -6,13 +6,17 @@
 
 const BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
-function getToken(): string | null {
+export function getToken(): string | null {
   return localStorage.getItem('perfectrishta_token');
 }
 
-function setToken(token: string | null) {
+export function setToken(token: string | null) {
   if (token) localStorage.setItem('perfectrishta_token', token);
-  else localStorage.removeItem('perfectrishta_token');
+  else {
+    localStorage.removeItem('perfectrishta_token');
+    localStorage.removeItem('perfectrishta_current_member');
+    localStorage.removeItem('perfectrishta_current_user');
+  }
 }
 
 async function request<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
