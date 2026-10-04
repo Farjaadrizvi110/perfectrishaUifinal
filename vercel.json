@@ -11,16 +11,17 @@
   "functions": {
     "api/[[...slug]].js": {
       "maxDuration": 30,
-      "includeFiles": "backend/**/*.{js,json,mjs}"
+      "includeFiles": "{backend,api,node_modules}/**/*.{js,json,mjs,cjs,ts,node}",
+      "excludeFiles": "**/node_modules/**/{test,tests,__tests__,example,examples,docs,doc,.github,coverage}/**,**/*.{md,txt,log,tsbuildinfo}"
     }
   },
   "rewrites": [
     {
-      "source": "/api/(.*)",
+      "source": "/api/:path*",
       "destination": "/api/[[...slug]]"
     },
     {
-      "source": "/((?!api/).*)",
+      "source": "/((?!api/|api$|_vercel|__vsc|assets/|images/|public/|favicon|robots\\.txt|sitemap).*)",
       "destination": "/index.html"
     }
   ],
