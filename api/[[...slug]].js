@@ -104,13 +104,11 @@ export default async function handler(req, res) {
     });
   } catch (err) {
     console.error("[Vercel API] express handler invoke error:", err);
-    res
-      .status(500)
-      .json({
-        error: "handler invoke error",
-        detail: String(err?.message || err),
-        stack: err?.stack,
-      });
+    res.status(500).json({
+      error: "handler invoke error",
+      detail: String(err?.message || err),
+      stack: err?.stack,
+    });
   }
 }
 
@@ -147,18 +145,26 @@ function bootInfo(req) {
 }
 
 function listBackendFilesSafe() {
-  try {
-    const fs = require("fs");
-    const path = require("path");
-    const dir = path.resolve(process.cwd(), "backend", "src");
-    if (fs.existsSync(dir)) {
-      return fs
-        .readdirSync(dir, { withFileTypes: true })
-        .map((d) => d.name + (d.isDirectory() ? "/" : ""))
-        .slice(0, 30);
+  // ESM handler cannot call CommonJS require() if module system pure ESM on
+  // new Vercel node runtimes. Skip gracefully; use env vars for diagnostics.
+  const r =
+    (typeof globalThis !== "undefined" && globalThis.require) ||
+    (typeof require !== "undefined" ? require : undefined);
+  if (r) {
+    try {
+      const fsPkg = r("node:fs");
+      const pathPkg = r("node:path");
+      const dir = pathPkg.resolve(process.cwd(), "backend", "src");
+      if (fsPkg.existsSync(dir)) {
+        return fsPkg
+          .readdirSync(dir, { withFileTypes: true })
+          .slice(0, 30)
+          .map((d) => d.name + (d.isDirectory() ? "/" : ""));
+      }
+      return `backend/src NOT EXIST cwd=${process.cwd()}`;
+    } catch (err) {
+      return `list error: ${String((err && err.message) || err)}`;
     }
-    return `backend/src NOT EXIST cwd=${process.cwd()}`;
-  } catch (err) {
-    return String((err && err.message) || err);
   }
+  return "ESM runtime; skipped file listing. Env vars are fine, see boot.env.";
 }
