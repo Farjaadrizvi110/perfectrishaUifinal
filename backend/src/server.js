@@ -62,6 +62,10 @@ const CORS_ORIGINS = new Set(
     process.env.VERCEL_PROJECT_PRODUCTION_URL,
     "http://localhost:3000",
     "http://localhost:5173",
+    "https://perfectrishta.co.uk",
+    "https://www.perfectrishta.co.uk",
+    "http://perfectrishta.co.uk",
+    "http://www.perfectrishta.co.uk",
   ]
     .filter(Boolean)
     .map((o) => String(o).replace(/\/$/, "")),
@@ -98,6 +102,51 @@ app.get("/api/health", (req, res) => {
     mongoDbName: mongoose.connection.name || null,
     nodeEnv: process.env.NODE_ENV || "development",
   });
+});
+
+// ── Diagnostics endpoint (rewrites / env / boot without DB) ──
+app.get("/api/diag", (req, res) => {
+  try {
+    const bootInfo = {
+      platform: process.platform,
+      nodeVersion: process.versions.node,
+      cwd: process.cwd(),
+      env: {
+        NODE_ENV: process.env.NODE_ENV,
+        VERCEL: !!process.env.VERCEL,
+        VERCEL_URL: process.env.VERCEL_URL,
+        VERCEL_ENV: process.env.VERCEL_ENV,
+        VERCEL_PROJECT_PRODUCTION_URL:
+          process.env.VERCEL_PROJECT_PRODUCTION_URL,
+        MONGODB_URI_SET: !!process.env.MONGODB_URI,
+        MONGODB_URI_LEN: (process.env.MONGODB_URI || "").length,
+        MONGODB_URI_PREFIX: (process.env.MONGODB_URI || "").slice(0, 14),
+        JWT_SECRET_SET: !!process.env.JWT_SECRET,
+        ADMIN_USERNAME: process.env.ADMIN_USERNAME || "<missing-env>",
+        ADMIN_PASSWORD_SET: !!process.env.ADMIN_PASSWORD,
+        ADMIN_EMAIL: process.env.ADMIN_EMAIL || "<missing-env>",
+        CLIENT_URL: process.env.CLIENT_URL || undefined,
+      },
+      corsOrigins: Array.from(CORS_ORIGINS),
+    };
+    res.json({
+      diag: true,
+      reqUrl: req.url,
+      reqOriginalUrl: req.originalUrl || req.url,
+      reqMethod: req.method,
+      reqPath: req.path,
+      boot: bootInfo,
+      headers: Object.fromEntries(
+        Object.entries(req.headers || {}).filter(
+          ([k]) =>
+            !k.toLowerCase().includes("authorization") &&
+            !k.toLowerCase().includes("cookie"),
+        ),
+      ),
+    });
+  } catch (e) {
+    res.status(500).json({ error: String((e && e.message) || e) });
+  }
 });
 
 // ── Route mounting ──
