@@ -37,17 +37,20 @@ app.set(
 
 // ── Security & core middleware ──
 app.use(helmet());
-const CORS_ORIGINS = new Set(
+const EXPLICIT_CORS_ORIGINS = new Set(
   [
     process.env.CLIENT_URL,
-    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined,
     process.env.VERCEL_PROJECT_PRODUCTION_URL,
     "http://localhost:3000",
+    "http://localhost:3001",
     "http://localhost:5173",
     "https://perfectrishta.co.uk",
     "https://www.perfectrishta.co.uk",
     "http://perfectrishta.co.uk",
     "http://www.perfectrishta.co.uk",
+    "https://perfectrishta-uifinal-fordomain.vercel.app",
+    "https://perfectrisha-uifinal-fordomain.vercel.app",
+    "https://perfectrisha-backend.vercel.app",
   ]
     .filter(Boolean)
     .map((o) => String(o).replace(/\/$/, "")),
@@ -55,7 +58,25 @@ const CORS_ORIGINS = new Set(
 app.use(
   cors({
     origin: (origin, cb) => {
-      if (!origin || CORS_ORIGINS.has(origin)) return cb(null, true);
+      if (!origin) return cb(null, true);
+      if (EXPLICIT_CORS_ORIGINS.has(origin)) return cb(null, true);
+      // Allow any Vercel preview/branch deploy URL (*.vercel.app) to avoid
+      // breaking admin review apps or branch previews.
+      try {
+        const u = new URL(origin);
+        const host = u.hostname.toLowerCase();
+        if (host === "vercel.app" || host.endsWith(".vercel.app")) {
+          return cb(null, true);
+        }
+        if (
+          host === "perfectrishta.co.uk" ||
+          host.endsWith(".perfectrishta.co.uk")
+        ) {
+          return cb(null, true);
+        }
+      } catch {
+        /* malformed origin, fall through to reject */
+      }
       cb(null, false);
     },
     credentials: true,
@@ -109,7 +130,7 @@ app.get("/api/diag", (req, res) => {
         ADMIN_EMAIL: process.env.ADMIN_EMAIL || "<missing-env>",
         CLIENT_URL: process.env.CLIENT_URL || undefined,
       },
-      corsOrigins: Array.from(CORS_ORIGINS),
+      corsOrigins: Array.from(EXPLICIT_CORS_ORIGINS),
     };
     res.json({
       diag: true,

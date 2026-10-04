@@ -4,6 +4,32 @@ import Registration from "../models/Registration.js";
 import Profile from "../models/Profile.js";
 
 /**
+ * Normalize a plan / tier value (case-insensitive, allows Registration.plan
+ * enum "Free"/"Silver"/"Gold"/"Platinum" or User enum casing) into the
+ * User.membershipTier schema enum ['silver','gold','platinum','none'].
+ *
+ * RULE: Registration "Free" → User membershipTier = "none" because "free"
+ * is not a valid enum on User schema (premiumOnly guard uses silver/gold/
+ * platinum, and 'none' represents free/no paid membership active).
+ */
+function normalizeMembershipTier(input) {
+  if (input === null || input === undefined) return undefined;
+  const raw = String(input).trim().toLowerCase();
+  switch (raw) {
+    case "silver":
+    case "gold":
+    case "platinum":
+      return raw;
+    case "free":
+    case "none":
+    case "":
+      return "none";
+    default:
+      return undefined;
+  }
+}
+
+/**
  * GET /api/admin/registrations?status=pending
  * Admin — list all registrations, filterable by status.
  */
@@ -127,7 +153,7 @@ export async function approveRegistration(req, res, next) {
       password,
       role: "member",
       registrationId: registration._id,
-      membershipTier: (registration.plan || "free").toLowerCase(),
+      membershipTier: normalizeMembershipTier(registration.plan || "Free"),
       membershipStatus: "active",
       approvedAt: new Date(),
       approvedBy: (req.user && (req.user._id || req.user.id)) || null,
@@ -290,7 +316,10 @@ export async function updateMembership(req, res, next) {
       return res.status(404).json({ error: "Member not found" });
     }
 
-    if (tier) user.membershipTier = tier;
+    if (tier) {
+      const normalizedTier = normalizeMembershipTier(tier);
+      if (normalizedTier) user.membershipTier = normalizedTier;
+    }
     if (status) user.membershipStatus = status;
     await user.save();
 
@@ -494,7 +523,10 @@ export async function updateProfileByAdmin(req, res, next) {
           user.loginId = patch.loginId.trim();
         }
         if (newPassword) user.password = newPassword;
-        if (patch.membershipTier) user.membershipTier = patch.membershipTier;
+        if (patch.membershipTier) {
+          const normalizedTier = normalizeMembershipTier(patch.membershipTier);
+          if (normalizedTier) user.membershipTier = normalizedTier;
+        }
         if (patch.membershipStatus)
           user.membershipStatus = patch.membershipStatus;
         await user.save();
@@ -710,7 +742,10 @@ export async function updateRegistrationByAdmin(req, res, next) {
       if (user) {
         if (newLoginId) user.loginId = newLoginId;
         if (newPassword) user.password = newPassword;
-        if (patch.membershipTier) user.membershipTier = patch.membershipTier;
+        if (patch.membershipTier) {
+          const normalizedTier = normalizeMembershipTier(patch.membershipTier);
+          if (normalizedTier) user.membershipTier = normalizedTier;
+        }
         if (patch.membershipStatus)
           user.membershipStatus = patch.membershipStatus;
         await user.save();
