@@ -51,6 +51,7 @@ function validateUri(uri) {
  */
 function buildConnectOptions(kind) {
   const base = {
+    dbName: process.env.MONGODB_DBNAME || "perfectrishta",
     serverSelectionTimeoutMS: SERVER_SELECTION_TIMEOUT_MS,
     connectTimeoutMS: CONNECT_TIMEOUT_MS,
     socketTimeoutMS: SOCKET_TIMEOUT_MS,
@@ -61,7 +62,6 @@ function buildConnectOptions(kind) {
     maxPoolSize: Number(process.env.MONGODB_POOL_SIZE) || 100,
     minPoolSize: 0,
   };
-
   if (kind === "memory") {
     return { ...base, directConnection: true };
   }
