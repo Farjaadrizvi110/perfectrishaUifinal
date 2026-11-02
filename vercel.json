@@ -5,7 +5,6 @@
   "outputDirectory": "dist",
   "installCommand": "npm install --no-package-lock --legacy-peer-deps --no-audit --no-fund --include=dev 2>&1 | tail -n 20",
   "devCommand": "npm run dev",
-  "cleanUrls": true,
   "trailingSlash": false,
   "regions": ["lhr1"],
   "functions": {
