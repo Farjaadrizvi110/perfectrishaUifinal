@@ -21,7 +21,7 @@
       "destination": "/api/[[...slug]]"
     },
     {
-      "source": "/((?!api/|api$|_vercel|__vsc|assets/|images/|public/|favicon|robots\\.txt|sitemap).*)",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ],
