@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { membershipContent, paymentDetails } from '@/content/seoContent';
+import { navigateToPublicSite } from '@/lib/utils';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -39,8 +40,12 @@ export default function Membership() {
         const text = (title as HTMLElement).textContent || '';
         const words = text.split(' ');
         (title as HTMLElement).innerHTML = words.map(w =>
-          `<span class="inline-block overflow-hidden mr-[0.25em]"><span class="word-inner inline-block">${w}</span></span>`
+          `<span class="inline-block overflow-hidden"><span class="word-inner inline-block">${w}</span></span>`
         ).join('');
+        (title as HTMLElement).style.display = 'inline-flex';
+        (title as HTMLElement).style.flexWrap = 'wrap';
+        (title as HTMLElement).style.justifyContent = 'center';
+        (title as HTMLElement).style.columnGap = '0.25em';
         const inners = title.querySelectorAll('.word-inner');
         gsap.fromTo(inners, { opacity: 0, y: 50, rotateX: -20 },
           { opacity: 1, y: 0, rotateX: 0, duration: 0.6, stagger: 0.05, ease: 'power3.out',
@@ -138,7 +143,11 @@ export default function Membership() {
                 </ul>
                 <Link
                   to="/join"
-                  onClick={() => handleSelectPlan(plan.name)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleSelectPlan(plan.name);
+                    navigateToPublicSite('/join');
+                  }}
                   className="block w-full mt-8 py-3.5 rounded-full font-body text-sm font-semibold tracking-[0.08em] uppercase transition-all duration-400 hover:shadow-lg hover:scale-[1.02] text-center"
                   style={{
                     background: plan.highlighted ? 'linear-gradient(135deg, #800020, #4A0404)' : 'transparent',

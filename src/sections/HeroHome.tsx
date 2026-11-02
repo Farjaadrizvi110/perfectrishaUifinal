@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
+import { navigateToPublicSite } from '@/lib/utils';
 
 export default function HeroHome() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -44,7 +45,7 @@ export default function HeroHome() {
   return (
     <section id="hero" ref={sectionRef} className="relative w-full overflow-hidden" style={{ minHeight: '100vh' }}>
       {/* Background layers */}
-      <div className="absolute inset-0 z-0">
+      <div className="absolute inset-0 z-0 pointer-events-none">
         <img src="/images/hero-couple-hands.jpg" alt="Muslim groom and bride holding hands on wedding day in traditional maroon and gold attire with henna" className="w-full h-full object-cover" loading="eager" fetchPriority="high" />
         <div
           className="absolute inset-0"
@@ -116,10 +117,7 @@ export default function HeroHome() {
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              const host = window.location.hostname.toLowerCase();
-              const naked = host === 'perfectrishta.co.uk' || host === 'perfectrisha-uifinal-fordomain.vercel.app';
-              const base = naked ? 'https://www.perfectrishta.co.uk' : '';
-              window.location.href = `${base}/join`;
+              navigateToPublicSite('/join');
             }}
             className="px-10 py-4 rounded-full font-body text-sm font-semibold tracking-[0.1em] uppercase transition-all duration-400 hover:scale-105 hover:shadow-xl text-center relative z-[6] block"
             style={{ background: '#D4AF37', color: '#4A0404' }}
@@ -131,10 +129,7 @@ export default function HeroHome() {
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              const host = window.location.hostname.toLowerCase();
-              const naked = host === 'perfectrishta.co.uk' || host === 'perfectrisha-uifinal-fordomain.vercel.app';
-              const base = naked ? 'https://www.perfectrishta.co.uk' : '';
-              window.location.href = `${base}/about`;
+              navigateToPublicSite('/about');
             }}
             className="px-10 py-4 rounded-full font-body text-sm font-semibold tracking-[0.1em] uppercase border border-white/50 text-white transition-all duration-400 hover:bg-white/10 hover:border-white text-center relative z-[6] block"
           >

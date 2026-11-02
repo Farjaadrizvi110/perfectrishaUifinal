@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { navigateToPublicSite } from '@/lib/utils';
 
 export default function Navigation() {
   const [scrolled, setScrolled] = useState(false);
@@ -39,6 +40,11 @@ export default function Navigation() {
   const userMenuButtonAria = 'Open user menu';
 
   const showProposals = (isMember && user?.membershipStatus === 'active');
+  const openPublicPath = (path: string) => {
+    setMenuOpen(false);
+    setMobileOpen(false);
+    navigateToPublicSite(path);
+  };
 
   return (
     <>
@@ -66,9 +72,14 @@ export default function Navigation() {
             <Link to="/" className="font-body text-[13px] font-medium tracking-[0.1em] uppercase transition-all duration-300 hover:tracking-[0.14em]" style={{ color: scrolled ? '#4A0404' : '#FFFFFF' }} onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
               Home
             </Link>
-            <Link to="/about" className="font-body text-[13px] font-medium tracking-[0.1em] uppercase transition-all duration-300 hover:tracking-[0.14em]" style={{ color: scrolled ? '#4A0404' : '#FFFFFF' }}>
+            <button
+              type="button"
+              onClick={() => openPublicPath('/about')}
+              className="font-body text-[13px] font-medium tracking-[0.1em] uppercase transition-all duration-300 hover:tracking-[0.14em]"
+              style={{ color: scrolled ? '#4A0404' : '#FFFFFF' }}
+            >
               About Us
-            </Link>
+            </button>
             {showProposals && (
               <Link to="/proposals" className="font-body text-[13px] font-medium tracking-[0.1em] uppercase transition-all duration-300 hover:tracking-[0.14em]" style={{ color: scrolled ? '#4A0404' : '#FFFFFF' }}>
                 Proposals
@@ -87,7 +98,10 @@ export default function Navigation() {
                 <Link to="/login" className="font-body text-[13px] font-medium tracking-[0.1em] uppercase transition-all duration-300 hover:tracking-[0.14em]" style={{ color: scrolled ? '#4A0404' : '#FFFFFF' }}>
                   Login
                 </Link>
-                <Link to="/join" className="font-body text-xs font-semibold tracking-[0.1em] uppercase px-6 py-2.5 rounded-full transition-all duration-300 hover:scale-105"
+                <button
+                  type="button"
+                  onClick={() => openPublicPath('/join')}
+                  className="font-body text-xs font-semibold tracking-[0.1em] uppercase px-6 py-2.5 rounded-full transition-all duration-300 hover:scale-105"
                   style={{
                     background: scrolled ? '#800020' : 'rgba(255,255,255,0.2)',
                     color: '#FFFFFF',
@@ -95,7 +109,7 @@ export default function Navigation() {
                   }}
                 >
                   Register Now
-                </Link>
+                </button>
               </>
             )}
             {isLoggedIn && !loading && (
@@ -187,8 +201,8 @@ export default function Navigation() {
 
       {/* Mobile overlay */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-[99] flex flex-col items-center justify-center gap-6 px-8 overflow-y-auto" style={{ background: 'rgba(253, 251, 247, 0.98)', backdropFilter: 'blur(20px)' }}>
-          <button onClick={() => setMobileOpen(false)} className="absolute top-6 right-6 text-maroon text-3xl">&times;</button>
+        <div className="fixed inset-0 z-[130] flex flex-col items-center justify-center gap-6 px-8 overflow-y-auto" style={{ background: 'rgba(253, 251, 247, 0.98)', backdropFilter: 'blur(20px)' }}>
+          <button onClick={() => setMobileOpen(false)} className="absolute top-6 right-6 z-[131] text-maroon text-3xl">&times;</button>
           <Link to="/" onClick={() => { setMobileOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="mb-4 font-display text-4xl text-deep-maroon">
             <span className="font-light">Perfect</span>
             <span className="font-medium text-gold">Rishta</span>
@@ -205,7 +219,7 @@ export default function Navigation() {
             </div>
           )}
           <Link to="/" onClick={() => setMobileOpen(false)} className="font-display text-2xl text-deep-maroon hover:text-maroon transition-colors duration-300">Home</Link>
-          <Link to="/about" onClick={() => setMobileOpen(false)} className="font-display text-2xl text-deep-maroon hover:text-maroon transition-colors duration-300">About Us</Link>
+          <button type="button" onClick={() => openPublicPath('/about')} className="font-display text-2xl text-deep-maroon hover:text-maroon transition-colors duration-300">About Us</button>
           {showProposals && (
             <Link to="/proposals" onClick={() => setMobileOpen(false)} className="font-display text-2xl text-deep-maroon hover:text-maroon transition-colors duration-300">Proposals</Link>
           )}
@@ -216,9 +230,9 @@ export default function Navigation() {
           {!isLoggedIn && !loading && (
             <>
               <Link to="/login" onClick={() => setMobileOpen(false)} className="font-display text-2xl text-deep-maroon hover:text-maroon transition-colors duration-300">Login</Link>
-              <Link to="/join" onClick={() => setMobileOpen(false)} className="mt-2 font-body text-sm font-semibold tracking-[0.1em] uppercase px-8 py-3 rounded-full bg-maroon text-white">
+              <button type="button" onClick={() => openPublicPath('/join')} className="mt-2 font-body text-sm font-semibold tracking-[0.1em] uppercase px-8 py-3 rounded-full bg-maroon text-white">
                 Register Now
-              </Link>
+              </button>
             </>
           )}
           {isLoggedIn && !loading && (
