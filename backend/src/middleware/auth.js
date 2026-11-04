@@ -56,3 +56,26 @@ export function premiumOnly(req, res, next) {
   }
   next();
 }
+
+/**
+ * Profile-browsing permission guard — must be used after `protect`.
+ *
+ * This is the ADMIN-CONTROLLED switch: even an active paying member cannot
+ * browse other members' profiles until an admin explicitly grants
+ * `canViewProfiles` on their account. Members can always view their OWN
+ * profile/dashboard — this guard only protects the browse endpoints
+ * (GET /api/profiles, GET /api/profiles/:id).
+ *
+ * Admins bypass the flag so they can review any profile from the dashboard.
+ */
+export function canBrowseProfiles(req, res, next) {
+  if (req.user?.role === 'admin') return next();
+  if (req.user?.canViewProfiles !== true) {
+    return res.status(403).json({
+      error:
+        'Profile browsing access has not been granted on your account yet. Please contact our team.',
+      code: 'PROFILE_ACCESS_NOT_GRANTED',
+    });
+  }
+  next();
+}

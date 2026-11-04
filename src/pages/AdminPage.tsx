@@ -229,6 +229,32 @@ export default function AdminPage() {
     }
   }, []);
 
+  // ── Profile-viewing permission (admin allow / disallow) ──
+  // A member can always see their OWN dashboard; this switch only controls
+  // whether they can browse OTHER members' profiles.
+  const [accessBusy, setAccessBusy] = useState<string | null>(null);
+  const handleToggleProfileAccess = useCallback(
+    async (userId: string, next: boolean, loginId?: string) => {
+      if (!userId || accessBusy) return;
+      setAccessBusy(userId);
+      try {
+        await api.admin.setProfileAccess(userId, next);
+        setApprovedUsers((prev: any[]) =>
+          prev.map((u: any) => (String(u.id) === String(userId) ? { ...u, canViewProfiles: next } : u))
+        );
+        showToast(
+          'success',
+          `${next ? 'Profile viewing allowed' : 'Profile viewing disallowed'}${loginId ? ` for ${loginId}` : ''}`
+        );
+      } catch (err: any) {
+        showToast('error', err.message || 'Failed to update profile access');
+      } finally {
+        setAccessBusy(null);
+      }
+    },
+    [accessBusy]
+  );
+
   const closeEditDialog = useCallback(() => {
     setEditDialog({ open: false, mode: 'registration', id: '', loading: false, submitting: false, error: '', saved: false, showPassword: false, values: {} });
   }, []);
@@ -511,28 +537,53 @@ export default function AdminPage() {
       what === 'id' ? generatedCred.loginId :
       what === 'pw' ? generatedCred.password :
       `Login ID: ${generatedCred.loginId}\nPassword: ${generatedCred.password}`;
-    try {
-      if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(text);
-      } else {
+
+    const markCopied = () => {
+      setCopied(what);
+      window.setTimeout(() => setCopied(null), 2200);
+    };
+
+    // Synchronous fallback. Works inside sandboxed iframes / previews where the
+    // async Clipboard API is blocked by permissions policy ("clipboard-write").
+    const legacyCopy = (): boolean => {
+      try {
         const ta = document.createElement('textarea');
         ta.value = text;
+        ta.setAttribute('readonly', '');
         ta.style.position = 'fixed';
-        ta.style.left = '-9999px';
         ta.style.top = '0';
+        ta.style.left = '0';
         ta.style.width = '1px';
         ta.style.height = '1px';
+        ta.style.padding = '0';
+        ta.style.border = 'none';
+        ta.style.outline = 'none';
+        ta.style.boxShadow = 'none';
+        ta.style.background = 'transparent';
         ta.style.opacity = '0';
         document.body.appendChild(ta);
         ta.focus();
         ta.select();
         ta.setSelectionRange(0, text.length);
-        try { document.execCommand('copy'); } catch {}
+        const ok = document.execCommand('copy');
         document.body.removeChild(ta);
+        return ok;
+      } catch {
+        return false;
       }
-      setCopied(what);
-      setTimeout(() => setCopied(null), 2200);
-    } catch {}
+    };
+
+    // Prefer the async API, but fall back on ANY rejection (NotAllowedError /
+    // "document not focused" / insecure context) instead of failing silently.
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).then(markCopied, () => {
+        legacyCopy();
+        markCopied();
+      });
+    } else {
+      legacyCopy();
+      markCopied();
+    }
   };
 
   const handleLogout = () => {
@@ -964,11 +1015,34 @@ export default function AdminPage() {
                               <span className="font-body text-deep-maroon/50">Tier: </span>
                               <span className="font-body font-semibold capitalize text-maroon">{user.membershipTier}</span>
                             </div>
+                            <div className="flex items-center justify-end gap-2 mt-0.5">
+                              <span className="font-body text-deep-maroon/50">Profile View: </span>
+                              <span className="font-body font-semibold uppercase tracking-wider" style={{ color: user.canViewProfiles ? '#15803d' : '#b45309' }}>
+                                {user.canViewProfiles ? 'Allowed' : 'Blocked'}
+                              </span>
+                            </div>
                           </div>
                         ) : (
                           <span className="font-body text-[10px] text-deep-maroon/40 italic">No login found</span>
                         )}
                         <div className="flex gap-1.5 flex-wrap justify-end">
+                          {user && (
+                            <button
+                              type="button"
+                              disabled={accessBusy === String(user.id)}
+                              onClick={() => handleToggleProfileAccess(String(user.id), !user.canViewProfiles, user.loginId)}
+                              title={user.canViewProfiles
+                                ? 'Stop this member from browsing other profiles (they keep their own dashboard)'
+                                : 'Allow this member to browse other approved profiles'}
+                              className={`px-4 py-2 rounded-full font-body text-[11px] font-semibold tracking-[0.05em] uppercase transition-all duration-300 shrink-0 disabled:opacity-50 ${user.canViewProfiles ? 'border border-amber-200 text-amber-700 hover:bg-amber-50' : 'border border-green-200 text-green-700 hover:bg-green-50'}`}
+                            >
+                              {accessBusy === String(user.id)
+                                ? 'Saving…'
+                                : user.canViewProfiles
+                                  ? '🚫 Disallow Profile View'
+                                  : '✅ Allow Profile View'}
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={() => profileId ? openViewForProfile(String(profileId), name || `${profile.gender} ${profile.age} ${profile.location}`) : openViewForRegistration(pid, name || `${profile.gender} ${profile.age} ${profile.location}`)}

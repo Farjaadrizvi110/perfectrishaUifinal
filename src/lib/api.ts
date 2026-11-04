@@ -155,6 +155,16 @@ export const api = {
         body: JSON.stringify({ tier, status }),
       }),
 
+    /**
+     * Admin-only: allow/disallow a member from browsing OTHER members' profiles.
+     * Members can always see their own dashboard regardless of this flag.
+     */
+    setProfileAccess: (id: string, canViewProfiles: boolean) =>
+      request<{ message: string; member: { id: string; loginId?: string; canViewProfiles: boolean } }>(
+        `/admin/members/${id}/profile-access`,
+        { method: 'PATCH', body: JSON.stringify({ canViewProfiles }) }
+      ),
+
     getStats: () => request('/admin/stats'),
 
     getProfile: (id: string) =>

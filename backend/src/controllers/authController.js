@@ -89,7 +89,9 @@ export async function login(req, res, next) {
 
     const user = await User.findOne({
       $or: [{ loginId: loginIdUpper }, { username: loginIdRaw }],
-    }).select("+password").exec();
+    })
+      .select("+password")
+      .exec();
 
     if (!user) {
       return res.status(401).json({ error: "Invalid Login ID or Password" });
@@ -131,6 +133,7 @@ export async function login(req, res, next) {
         role: user.role,
         membershipTier: user.membershipTier,
         membershipStatus: user.membershipStatus,
+        canViewProfiles: user.canViewProfiles === true,
       },
     });
   } catch (err) {
@@ -234,6 +237,7 @@ export async function getMe(req, res, next) {
         role: user.role,
         membershipTier: user.membershipTier,
         membershipStatus: user.membershipStatus,
+        canViewProfiles: user.canViewProfiles === true,
         approvedAt: user.approvedAt,
         lastLoginAt: user.lastLoginAt,
       },

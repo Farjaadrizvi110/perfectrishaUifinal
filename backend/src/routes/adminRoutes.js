@@ -6,6 +6,7 @@ import {
   rejectRegistration,
   getMembers,
   updateMembership,
+  updateProfileAccess,
   getStats,
   getProfileForAdmin,
   updateProfileByAdmin,
@@ -31,6 +32,8 @@ router.delete("/registrations/:id", deleteRegistrationByAdmin);
 // ── Members ──
 router.get("/members", getMembers);
 router.patch("/members/:id/membership", updateMembership);
+// Allow / disallow a member from browsing other members' profiles
+router.patch("/members/:id/profile-access", updateProfileAccess);
 
 // ── Stats ──
 router.get("/stats", getStats);

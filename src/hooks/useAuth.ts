@@ -8,6 +8,8 @@ export interface AuthUserPayload {
   username?: string;
   membershipTier?: string;
   membershipStatus?: string;
+  /** Admin-granted permission to browse OTHER members' profiles. */
+  canViewProfiles?: boolean;
   approvedAt?: string;
   lastLoginAt?: string;
   firstName?: string;
@@ -64,6 +66,7 @@ function extractFromMe(me: any): AuthUserPayload | null {
     username: u.username ? String(u.username) : undefined,
     membershipTier: u.membershipTier ? String(u.membershipTier) : undefined,
     membershipStatus: u.membershipStatus ? String(u.membershipStatus) : undefined,
+    canViewProfiles: u.canViewProfiles === true,
     approvedAt: u.approvedAt ? String(u.approvedAt) : undefined,
     lastLoginAt: u.lastLoginAt ? String(u.lastLoginAt) : undefined,
     firstName,
@@ -141,6 +144,7 @@ function hydrateFromLoginResponseInternal(payload: any) {
     username: u.username ? String(u.username) : undefined,
     membershipTier: u.membershipTier ? String(u.membershipTier) : undefined,
     membershipStatus: u.membershipStatus ? String(u.membershipStatus) : undefined,
+    canViewProfiles: u.canViewProfiles === true,
     firstName: String(u.firstName || '').trim() || undefined,
     lastName: String(u.lastName || '').trim() || undefined,
     approvedAt: u.approvedAt ? String(u.approvedAt) : undefined,
@@ -182,6 +186,8 @@ export function useAuth() {
   const isLoggedIn = !!user;
   const isAdmin = user?.role === 'admin';
   const isMember = user?.role === 'member';
+  /** Admins bypass the flag; members need an explicit admin grant. */
+  const canViewProfiles = isAdmin || user?.canViewProfiles === true;
   const displayName =
     (user?.firstName && user?.lastName)
       ? `${user.firstName} ${user.lastName}`.trim()
@@ -208,6 +214,7 @@ export function useAuth() {
     isLoggedIn,
     isAdmin,
     isMember,
+    canViewProfiles,
     displayName,
     initials,
   };

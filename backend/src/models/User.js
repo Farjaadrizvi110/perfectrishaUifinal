@@ -44,6 +44,14 @@ const userSchema = new mongoose.Schema(
       enum: ['active', 'expired', 'pending'],
       default: 'pending',
     },
+    // ── Explicit admin-controlled permission ──
+    // Gate for browsing OTHER members' profiles. Defaults to false so a newly
+    // approved member can only see their own dashboard until an admin grants
+    // access. Admin accounts bypass this flag entirely (see middleware/auth.js).
+    canViewProfiles: {
+      type: Boolean,
+      default: false,
+    },
     approvedAt: {
       type: Date,
       default: null,

@@ -1,11 +1,12 @@
 import { Router } from 'express';
 import { getProfiles, getProfileById } from '../controllers/profileController.js';
-import { protect, premiumOnly } from '../middleware/auth.js';
+import { protect, premiumOnly, canBrowseProfiles } from '../middleware/auth.js';
 
 const router = Router();
 
 // All profile routes require authentication + active premium membership
-router.use(protect, premiumOnly);
+// + the admin-granted `canViewProfiles` permission.
+router.use(protect, premiumOnly, canBrowseProfiles);
 
 router.get('/', getProfiles);
 router.get('/:id', getProfileById);

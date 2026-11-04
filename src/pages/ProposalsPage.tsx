@@ -35,6 +35,8 @@ export default function ProposalsPage() {
   const [isPaidMember, setIsPaidMember] = useState(false);
   const [memberInfo, setMemberInfo] = useState<CurrentMember | null>(null);
   const [loaded, setLoaded] = useState(false);
+  /** null = unknown yet; false = admin has not granted browsing access. */
+  const [accessGranted, setAccessGranted] = useState<boolean | null>(null);
 
   const meProfileId = memberInfo?.profileId || (authUser?.profileId as string) || '';
   const meUserId = memberInfo?.userId || authUser?.id || '';
@@ -86,6 +88,15 @@ export default function ProposalsPage() {
           registrationId: regId || undefined,
         };
         setMemberInfo(info);
+
+        // ── Admin-controlled permission gate ──
+        // Even an active paying member must be explicitly allowed by an admin
+        // before other members' profiles are fetched or rendered. Server-side
+        // enforcement lives in the `canBrowseProfiles` guard on /api/profiles.
+        const granted = meData.user.canViewProfiles === true;
+        setAccessGranted(granted);
+        if (!granted) return;
+
         const profilesData: any = await api.profiles.list();
         const list: any[] = Array.isArray(profilesData?.profiles) ? profilesData.profiles : [];
         const ownIds = new Set<string>();
@@ -209,6 +220,42 @@ export default function ProposalsPage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/login" className="px-10 py-4 rounded-full font-body text-sm font-semibold tracking-[0.1em] uppercase transition-all duration-400 hover:scale-105 hover:shadow-xl text-center" style={{ background: 'linear-gradient(135deg, #800020, #4A0404)', color: '#FFFFFF' }}>Sign In</Link>
             <Link to="/join" className="px-10 py-4 rounded-full font-body text-sm font-semibold tracking-[0.1em] uppercase border border-maroon/20 text-maroon transition-all duration-400 hover:bg-maroon hover:text-white text-center">Register Now</Link>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // Signed-in, approved member — but an admin has not yet allowed this member
+  // to browse other profiles. They keep full access to their own dashboard.
+  if (accessGranted === false) {
+    return (
+      <section ref={sectionRef} className="relative w-full overflow-hidden" style={{ background: 'linear-gradient(180deg, #FDFBF7 0%, #FFFFFF 50%, #FDFBF7 100%)', paddingTop: 'clamp(100px, 14vh, 160px)', paddingBottom: 'clamp(60px, 8vh, 100px)', minHeight: '100vh' }}>
+        <img src="/images/bg-floral.jpg" alt="" className="absolute top-0 right-0 w-[380px] opacity-[0.04] z-0 pointer-events-none" aria-hidden="true" />
+        <div className="relative z-10 max-w-[600px] mx-auto px-6 text-center">
+          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-gold/15 to-maroon/10 flex items-center justify-center mx-auto mb-8">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#800020" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <h1 className="font-display text-3xl text-deep-maroon mb-4">Profile Access Pending</h1>
+          <div className="w-16 h-px bg-gradient-to-r from-transparent via-gold/50 to-transparent mx-auto mb-6" />
+          <p className="font-body text-base text-deep-maroon/60 leading-relaxed mb-4">
+            Your profile is approved and your own dashboard is fully available. Browsing other members&apos; profiles is switched on individually by our team after your membership is confirmed.
+          </p>
+          <p className="font-body text-sm text-deep-maroon/45 leading-relaxed mb-8">
+            Please message us on WhatsApp with your Login ID and we will enable it straight away, In Sha Allah.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <a
+              href={`https://wa.me/${footerContent.whatsapp.replace(/\s/g, '').replace(/^\+/, '')}?text=${encodeURIComponent(`Assalamualaikum PerfectRishta team,\nMy Login ID is ${memberInfo?.loginId || ''}.\nPlease could you enable profile browsing on my account? Jazak Allah khair.`)}`}
+              target="_blank" rel="noopener noreferrer"
+              className="px-10 py-4 rounded-full font-body text-sm font-semibold tracking-[0.1em] uppercase transition-all duration-400 hover:scale-105 hover:shadow-xl text-center"
+              style={{ background: 'linear-gradient(135deg, #25D366, #128C7E)', color: '#FFFFFF' }}
+            >
+              Request Access on WhatsApp
+            </a>
+            <Link to="/dashboard" className="px-10 py-4 rounded-full font-body text-sm font-semibold tracking-[0.1em] uppercase border border-maroon/20 text-maroon transition-all duration-400 hover:bg-maroon hover:text-white text-center">
+              My Dashboard
+            </Link>
           </div>
         </div>
       </section>

@@ -155,6 +155,9 @@ export async function approveRegistration(req, res, next) {
       registrationId: registration._id,
       membershipTier: normalizeMembershipTier(registration.plan || "Free"),
       membershipStatus: "active",
+      // Explicitly withheld: the member sees ONLY their own dashboard until an
+      // admin grants browsing access via PATCH /admin/members/:id/profile-access.
+      canViewProfiles: false,
       approvedAt: new Date(),
       approvedBy: (req.user && (req.user._id || req.user.id)) || null,
     });
@@ -289,6 +292,7 @@ export async function getMembers(req, res, next) {
         loginId: m.loginId,
         membershipTier: m.membershipTier,
         membershipStatus: m.membershipStatus,
+        canViewProfiles: m.canViewProfiles === true,
         approvedAt: m.approvedAt,
         lastLoginAt: m.lastLoginAt,
         registration: m.registrationId,
@@ -329,6 +333,51 @@ export async function updateMembership(req, res, next) {
         id: user._id,
         membershipTier: user.membershipTier,
         membershipStatus: user.membershipStatus,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * PATCH /api/admin/members/:id/profile-access
+ * Admin — ALLOW or DISALLOW a member from browsing other members' profiles.
+ *
+ * Body: { canViewProfiles: boolean }
+ *
+ * This is the only way a member's browsing permission changes. It is enforced
+ * server-side by the `canBrowseProfiles` guard on /api/profiles, so a member
+ * cannot bypass it from the browser. Members always keep access to their OWN
+ * dashboard/profile regardless of this flag.
+ */
+export async function updateProfileAccess(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { canViewProfiles } = req.body || {};
+
+    if (typeof canViewProfiles !== "boolean") {
+      return res.status(400).json({
+        error: "canViewProfiles must be provided as true or false",
+      });
+    }
+
+    const user = await User.findById(id);
+    if (!user || user.role !== "member") {
+      return res.status(404).json({ error: "Member not found" });
+    }
+
+    user.canViewProfiles = canViewProfiles;
+    await user.save();
+
+    res.json({
+      message: canViewProfiles
+        ? "Profile browsing access granted"
+        : "Profile browsing access revoked",
+      member: {
+        id: user._id,
+        loginId: user.loginId,
+        canViewProfiles: user.canViewProfiles,
       },
     });
   } catch (err) {

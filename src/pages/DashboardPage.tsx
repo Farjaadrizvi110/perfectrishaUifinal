@@ -15,6 +15,7 @@ interface MeData {
     role: string;
     membershipTier: string;
     membershipStatus: string;
+    canViewProfiles?: boolean;
     approvedAt?: string;
     lastLoginAt?: string;
   };
@@ -246,14 +247,25 @@ export default function DashboardPage() {
 
               {/* Quick actions */}
               <div className="flex flex-col sm:flex-row sm:items-end gap-3 shrink-0">
-                <Link
-                  to="/proposals"
-                  className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full font-body text-sm font-semibold tracking-[0.1em] uppercase transition-all duration-400 hover:scale-[1.02] hover:shadow-2xl whitespace-nowrap"
-                  style={{ background: 'linear-gradient(135deg, #800020, #4A0404)', color: '#FFFFFF' }}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                  Browse Proposals
-                </Link>
+                {user?.canViewProfiles === true ? (
+                  <Link
+                    to="/proposals"
+                    className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full font-body text-sm font-semibold tracking-[0.1em] uppercase transition-all duration-400 hover:scale-[1.02] hover:shadow-2xl whitespace-nowrap"
+                    style={{ background: 'linear-gradient(135deg, #800020, #4A0404)', color: '#FFFFFF' }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    Browse Proposals
+                  </Link>
+                ) : (
+                  <Link
+                    to="/proposals"
+                    title="Profile browsing is enabled by our team once your membership is confirmed"
+                    className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full font-body text-sm font-semibold tracking-[0.1em] uppercase transition-all duration-400 hover:scale-[1.02] whitespace-nowrap border border-maroon/15 bg-maroon/5 text-deep-maroon/60 hover:bg-maroon/10"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    Profile Access Pending
+                  </Link>
+                )}
                 <a
                   href={`https://wa.me/${footerContent.whatsapp.replace(/\s/g, '').replace(/^\+/, '')}?text=${encodeURIComponent(`Assalamualaikum team Perfect Rishta,\nI would like to update my profile (${user?.loginId || ''}).\nName: ${applicantName}`)}`}
                   target="_blank" rel="noopener noreferrer"
